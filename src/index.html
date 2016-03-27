@@ -95,10 +95,23 @@ function AddFeld(bezeichnung, anzahl, isAnzuzeigen) {
 }
 
 $(document).ready( function() {
-	AddFeld();
 	$("#textboxId").prop("disabled", true);
 	$("#textboxRev").prop("disabled", true);
+
+
+	if (IsFormularZuLaden())
+		LoadFormular();
+	else
+		AddFeld();
+
 });
+
+function IsFormularZuLaden() {
+	if ($("#textboxId").val() != "")
+		return true;
+
+	return false;
+}
 </script>
 </head>
 <body>
