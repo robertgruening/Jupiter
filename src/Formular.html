@@ -27,6 +27,10 @@ function Clear() {
 	$("#divFelder").empty();
 }
 
+function ReloadFormulare() {
+	LoadFormulare();
+}
+
 function LoadFormulare() {
 	$.couch.db(_dbName).query(function(doc) {
 		if (doc.DocType != undefined &&
@@ -44,29 +48,40 @@ function LoadFormulare() {
 
 function LoadSelectionFormulare(formulare) {
 	$("#divFormulare").empty();
-	$("#divFormulare").append("<select id=dropdownFormulare>");
+	
+	var selectTag = "<select id=dropdownFormulare>";
 	for (var i = 0; i < formulare.total_rows; i++)
 	{
-		$("#divFormulare select").append("<option value="+formulare.rows[i].value._id+" rev="+formulare.rows[i].value._rev+">"+formulare.rows[i].value.Bezeichnung+"</option>");
+		selectTag += "<option value="+formulare.rows[i].value._id+" rev="+formulare.rows[i].value._rev+">"+formulare.rows[i].value.Bezeichnung+"</option>";
 	}
-	$("#divFormulare").append("</select>");
+	selectTag += "</select>";
+	$("#divFormulare").append(selectTag);
 
-	$("#dropdownFormulare").select( function() {
-		var formularId = $("#dropdownFormulare :selected").val();
+	RegisterSelectionFormulare_Change();
+	RegisterSelectionFormulare_Select();	
+	Load();
+}
+
+function RegisterSelectionFormulare_Change() {
+
+	$("#dropdownFormulare").change( function() {
+		/*var formularId = $("#dropdownFormulare :selected").val();
 		$("#textboxId").val(formularId);
 		
 		var formularRev = $("#dropdownFormulare [value="+formularId+"]").attr("rev");
-		$("#textboxRev").val(formularRev);
+		$("#textboxRev").val(formularRev);*/
 		
 		Load();
 	});
+}
 
-	$("#dropdownFormulare").change( function() {
-		var formularId = $("#dropdownFormulare :selected").val();
+function RegisterSelectionFormulare_Select() {
+	$("#dropdownFormulare").select( function() {
+		/*var formularId = $("#dropdownFormulare :selected").val();
 		$("#textboxId").val(formularId);
 		
 		var formularRev = $("#dropdownFormulare [value="+formularId+"]").attr("rev");
-		$("#textboxRev").val(formularRev);
+		$("#textboxRev").val(formularRev);*/
 		
 		Load();
 	});
@@ -112,8 +127,13 @@ function SetJSONFormular(formular) {
 	});
 }
 
+function New() {
+	$("#divFormulare").empty();
+	Clear();
+}
+
 function Load() {
-	var id = $("#textboxId").val();
+	var id = $("#dropdownFormulare").val();
 	
 	Clear();
 	
@@ -135,6 +155,7 @@ function Save() {
 	$.couch.db(_dbName).saveDoc(GetJSONFormular(), {
 	success : function(data) {
 		alert("Das Formular wurde gespeichert!");
+		ReloadFormulare();
 	},
 	error : function(data) {
 		alert("Fehler: " + data);
@@ -150,15 +171,16 @@ function Delete() {
 		"_rev" : $("#textboxRev").val()
 	};
 
-	$.couch.db(_dbName).removeDoc(GetJSONFormular(), {
+	$.couch.db(_dbName).removeDoc(doc, {
 	key : id,
 	success : function(data) {
 		alert("Das Formular wurde gelöscht!");
+		ReloadFormulare();
 	},
 	error : function(data) {
 		alert("Fehler: " + data);
-	}
-	});
+	}}
+	);
 }
 
 function AddFeld(bezeichnung, anzahl, isAnzuzeigen) {
@@ -189,8 +211,9 @@ function IsFormularZuLaden() {
 		
 	</div>	
 	<input id=buttonAddFeld onclick=javascript:AddFeld() type=button value="Feld hinzufügen"></input></br>
+	<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
 	<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
-	<input id=buttonDeleteFormular onlick=javascript:Delete() type=button value=Löschen></input>
+	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen></input>
 </div>
 </body>
 </html>
