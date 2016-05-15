@@ -1,0 +1,258 @@
+<html>
+<head>
+<meta charset=utf-8>
+<script src="/_utils/script/jquery.js"></script>
+<script src="/_utils/script/jquery.couch.js"></script>
+<script>
+var _dbName = "jupiter";
+
+
+$(document).ready( function() {
+	$("#textboxId").prop("disabled", true);
+	$("#textboxRev").prop("disabled", true);
+
+	if (IsElementZuLaden())
+		Load();
+	else
+	{
+		LoadFormulare();
+		//AddFeld();
+	}
+
+});
+
+function LoadFormulare() {
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+		doc.DocType == "Formular")
+			emit(doc._id, doc);
+		},null, null, {
+		success : function(data) {
+			LoadSelectionFormulare(data);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function LoadSelectionFormulare(formulare) {
+	$("#divFormulare").empty();
+	
+	var selectTag = "<select id=dropdownFormulare>";
+	for (var i = 0; i < formulare.total_rows; i++)
+	{
+		selectTag += "<option value="+formulare.rows[i].value._id+" rev="+formulare.rows[i].value._rev+">"+formulare.rows[i].value.Bezeichnung+"</option>";
+	}
+	selectTag += "</select>";
+	$("#divFormulare").append(selectTag);
+
+	RegisterSelectionFormulare_Change();
+	RegisterSelectionFormulare_Select();
+	LoadFormularFelder();
+}
+
+function RegisterSelectionFormulare_Change() {
+
+	$("#dropdownFormulare").change( function() {
+		/*var formularId = $("#dropdownFormulare :selected").val();
+		$("#textboxId").val(formularId);
+		
+		var formularRev = $("#dropdownFormulare [value="+formularId+"]").attr("rev");
+		$("#textboxRev").val(formularRev);*/
+		
+		LoadFormularFelder();
+	});
+}
+
+function RegisterSelectionFormulare_Select() {
+	$("#dropdownFormulare").select( function() {
+		/*var formularId = $("#dropdownFormulare :selected").val();
+		$("#textboxId").val(formularId);
+		
+		var formularRev = $("#dropdownFormulare [value="+formularId+"]").attr("rev");
+		$("#textboxRev").val(formularRev);*/
+		
+		LoadFormularFelder();
+	});
+}
+
+function LoadFormularFelder() {
+	var id = $("#dropdownFormulare").val();
+	
+	$.couch.db(_dbName).query(function(doc) {
+			emit(doc._id, doc);
+		},null, null, {
+		key : id,
+		success : function(data) {
+			SetFormularFelder(data.rows[0].value);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function SetFormularFelder(formular) {	
+	$("#divFelder").empty();
+	
+	$(formular.Felder).each( function() {
+		AddFeld(this);
+	});
+}
+
+function GetJSONFormular() {
+	var formular = {
+		"DocType" : "Formular",
+		"Bezeichnung" : $("#textboxFormularBezeichnung").val(),
+		"Felder" : GetFelder()		
+	};
+	
+	if ($("#textboxId").val() != "")
+		formular._id = $("#textboxId").val();
+	
+	if ($("#textboxRev").val() != "")
+		formular._rev = $("#textboxRev").val();
+
+	return formular;
+}
+
+function GetFelder() {
+	var felder = new Array();
+
+	$("#divFelder [name='feld']").each( function() {
+		var feld = {};
+		feld.Bezeichnung = $("[name='bezeichnung']", this).val();
+		feld.Anzahl = $("[name='anzahl']", this).val();
+		feld.IsAnzuzeigen = $("[name='isAnzuzeigen'] :selected", this).val();
+		felder.push(feld);
+	});
+
+	return felder;
+}
+
+function Clear() {
+	$("#textboxFormularBezeichnung").val("");	
+	$("#textboxId").val("");
+	$("#textboxRev").val("");
+	$("#divFelder").empty();
+}
+
+function ReloadElement() {
+	LoadElement();
+}
+
+function LoadElement() {
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+		doc.DocType == "Element")
+			emit(doc._id, doc);
+		},null, null, {
+		success : function(data) {
+			LoadSelectionElement(data);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function SetJSONElement(element) {
+	$("#textboxFormularBezeichnung").val(formular.Bezeichnung);	
+	$("#textboxId").val(formular._id);
+	$("#textboxRev").val(formular._rev);
+
+	$(formular.Felder).each( function() {
+		AddFeld(this.Bezeichnung, this.Anzahl, this.IsAnzuzeigen);
+	});
+}
+
+function New() {
+	$("#divFormulare").empty();
+	Clear();
+}
+
+function Load() {
+	var id = $("#dropdownFormulare").val();
+	
+	Clear();
+	
+	$.couch.db(_dbName).query(function(doc) {
+		emit(doc._id, doc);
+	}, null, null, { 
+	key : id,
+	success : function(data) {
+		if (parseInt(data.total_rows) > 0)
+			SetJSONFormular(data.rows[0].value);
+	},
+	error : function(data) {
+		$("body").text("ERROR: "+data);
+	}}
+	);
+}
+
+function Save() {
+	$.couch.db(_dbName).saveDoc(GetJSONFormular(), {
+	success : function(data) {
+		alert("Das Formular wurde gespeichert!");
+		ReloadFormulare();
+	},
+	error : function(data) {
+		alert("Fehler: " + data);
+	}
+	});
+}
+
+function Delete() {	
+	var id = $("#textboxId").val();
+	
+	var doc = {
+		"_id" : $("#textboxId").val(),
+		"_rev" : $("#textboxRev").val()
+	};
+
+	$.couch.db(_dbName).removeDoc(doc, {
+	key : id,
+	success : function(data) {
+		alert("Das Element wurde gelöscht!");
+		ReloadElement();
+	},
+	error : function(data) {
+		alert("Fehler: " + data);
+	}}
+	);
+}
+
+function AddFeld(feld) {
+	var feldHTML = "";
+	feldHTML += "<div name=feld bezeichnung=" + feld.Bezeichnung + ">";
+	feldHTML += "<label>" + feld.Bezeichnung + ": </label><input type=text></input><br/>";
+	feldHTML += "Max. Anzahl: <label>" + feld.Anzahl + "</label><br/>";
+	feldHTML += "Anzuzeigen bei Suchen: <label>" + (feld.IsAnzuzeigen == "true" ? "Ja" : "Nein") + "</label>";
+	feldHTML += "</div>";
+	$("#divFelder").append(feldHTML);
+}
+
+function IsElementZuLaden() {
+	if ($("#textboxId").val() != "")
+		return true;
+
+	return false;
+}
+</script>
+</head>
+<body>
+<div id=divNewElement>
+	Id: <input id=textboxId type=text></input></br>
+	Rev: <input id=textboxRev type=text></input></br>
+	Formular: <div id=divFormulare></div></br>
+	<div id=divFelder>
+		
+	</div>	
+	<input id=buttonAddFeld onclick=javascript:AddFeld() type=button value="Feld hinzufügen"></input></br>
+	<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
+	<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
+	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen></input>
+</div>
+</body>
+</html>
