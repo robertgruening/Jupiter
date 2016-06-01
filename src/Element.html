@@ -101,20 +101,20 @@ function SetFormularFelder(formular) {
 	});
 }
 
-function GetJSONFormular() {
-	var formular = {
-		"DocType" : "Formular",
-		"Bezeichnung" : $("#textboxFormularBezeichnung").val(),
+function GetJSONElement() {
+	var element = {
+		"DocType" : "Data",
+		"Formular" : $("#dropdownFormulare option:selected").text(),
 		"Felder" : GetFelder()		
 	};
 	
 	if ($("#textboxId").val() != "")
-		formular._id = $("#textboxId").val();
+		element._id = $("#textboxId").val();
 	
 	if ($("#textboxRev").val() != "")
-		formular._rev = $("#textboxRev").val();
+		element._rev = $("#textboxRev").val();
 
-	return formular;
+	return element;
 }
 
 function GetFelder() {
@@ -122,9 +122,8 @@ function GetFelder() {
 
 	$("#divFelder [name='feld']").each( function() {
 		var feld = {};
-		feld.Bezeichnung = $("[name='bezeichnung']", this).val();
-		feld.Anzahl = $("[name='anzahl']", this).val();
-		feld.IsAnzuzeigen = $("[name='isAnzuzeigen'] :selected", this).val();
+		feld.Bezeichnung = this.bezeichnung;
+		feld.Wert = $("[name='wert']", this).val();
 		felder.push(feld);
 	});
 
@@ -192,10 +191,10 @@ function Load() {
 }
 
 function Save() {
-	$.couch.db(_dbName).saveDoc(GetJSONFormular(), {
+	$.couch.db(_dbName).saveDoc(GetJSONElement(), {
 	success : function(data) {
-		alert("Das Formular wurde gespeichert!");
-		ReloadFormulare();
+		alert("Das Element wurde gespeichert! " + JSON.stringify(data));
+		//ReloadElement(data.id);
 	},
 	error : function(data) {
 		alert("Fehler: " + data);
@@ -226,9 +225,9 @@ function Delete() {
 function AddFeld(feld) {
 	var feldHTML = "";
 	feldHTML += "<div name=feld bezeichnung=" + feld.Bezeichnung + ">";
-	feldHTML += "<label>" + feld.Bezeichnung + ": </label><input type=text></input><br/>";
-	feldHTML += "Max. Anzahl: <label>" + feld.Anzahl + "</label><br/>";
-	feldHTML += "Anzuzeigen bei Suchen: <label>" + (feld.IsAnzuzeigen == "true" ? "Ja" : "Nein") + "</label>";
+	feldHTML += "<label name=bezeichnung>" + feld.Bezeichnung + ": </label><input name=wert type=text></input>";
+	feldHTML += "<input name=maxAnzahl type=hidden value=" + feld.Anzahl + "></input>";
+	feldHTML += "<label name=information>Anzuzeigen bei Suchen: " + (feld.IsAnzuzeigen == "true" ? "Ja" : "Nein") + "</label>";
 	feldHTML += "</div>";
 	$("#divFelder").append(feldHTML);
 }
@@ -248,8 +247,7 @@ function IsElementZuLaden() {
 	Formular: <div id=divFormulare></div></br>
 	<div id=divFelder>
 		
-	</div>	
-	<input id=buttonAddFeld onclick=javascript:AddFeld() type=button value="Feld hinzufügen"></input></br>
+	</div>
 	<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
 	<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
 	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen></input>
