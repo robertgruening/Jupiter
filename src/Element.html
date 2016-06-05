@@ -5,27 +5,45 @@
 <script src="/_utils/script/jquery.couch.js"></script>
 <script>
 var _dbName = "jupiter";
+var _element = null;
 
 
 $(document).ready( function() {
 	$("#textboxId").prop("disabled", true);
 	$("#textboxRev").prop("disabled", true);
-
-	if (IsElementZuLaden())
-		Load();
-	else
+	
+	if (GetURLParameter("id") &&
+		GetURLParameter("revision"))
 	{
-		LoadFormulare();
-		//AddFeld();
+		$("#textboxId").val(GetURLParameter("id"));
+		$("#textboxRev").val(GetURLParameter("revision"));
 	}
 
+	if (IsElementZuLaden())
+		LoadElement();
+	else
+		LoadFormulare();
+
 });
+
+function GetURLParameter(name) {
+	var url = window.location.search.substring(1);
+	var parameters = url.split("&");
+	for (var i = 0; i < parameters.length; i++)
+	{
+		var parameter = parameters[i].split("=");
+		if (parameter[0] == name)
+		{
+			return parameter[1];
+		}
+	}
+}
 
 function LoadFormulare() {
 	$.couch.db(_dbName).query(function(doc) {
 		if (doc.DocType != undefined &&
 		doc.DocType == "Formular")
-			emit(doc._id, doc);
+			emit(doc.Bezeichnung, doc);
 		},null, null, {
 		success : function(data) {
 			LoadSelectionFormulare(data);
@@ -46,33 +64,32 @@ function LoadSelectionFormulare(formulare) {
 	}
 	selectTag += "</select>";
 	$("#divFormulare").append(selectTag);
+	
+	SelectFormular();
 
 	RegisterSelectionFormulare_Change();
 	RegisterSelectionFormulare_Select();
 	LoadFormularFelder();
 }
 
+function SelectFormular() {	
+	if (_element != null)
+	{
+		$("#dropdownFormulare").val($("#dropdownFormulare option").filter( function() {
+			return ($(this).text() == _element.Formular);
+		}).val());
+	}
+}
+
 function RegisterSelectionFormulare_Change() {
 
-	$("#dropdownFormulare").change( function() {
-		/*var formularId = $("#dropdownFormulare :selected").val();
-		$("#textboxId").val(formularId);
-		
-		var formularRev = $("#dropdownFormulare [value="+formularId+"]").attr("rev");
-		$("#textboxRev").val(formularRev);*/
-		
+	$("#dropdownFormulare").change( function() {		
 		LoadFormularFelder();
 	});
 }
 
 function RegisterSelectionFormulare_Select() {
-	$("#dropdownFormulare").select( function() {
-		/*var formularId = $("#dropdownFormulare :selected").val();
-		$("#textboxId").val(formularId);
-		
-		var formularRev = $("#dropdownFormulare [value="+formularId+"]").attr("rev");
-		$("#textboxRev").val(formularRev);*/
-		
+	$("#dropdownFormulare").select( function() {		
 		LoadFormularFelder();
 	});
 }
@@ -122,12 +139,30 @@ function GetFelder() {
 
 	$("#divFelder [name='feld']").each( function() {
 		var feld = {};
-		feld.Bezeichnung = this.bezeichnung;
-		feld.Wert = $("[name='wert']", this).val();
+		feld.Bezeichnung = GetFeldBezeichnung(this);
+		feld.Wert = GetFeldWerte(this);
 		felder.push(feld);
 	});
 
 	return felder;
+}
+
+function GetFeldBezeichnung(htmlContainer) {
+	return $(htmlContainer).attr("bezeichnung");
+}
+
+function GetFeldWerte(htmlContainer) {
+	if ($("[name='wert']", htmlContainer).length > 1)
+	{
+		wert = new Array();
+		$("[name='wert']", htmlContainer).each( function () {
+			wert.push($(this).val());			
+		});
+	}
+	else
+		wert = $("[name='wert']", htmlContainer).val();
+		
+	return wert;
 }
 
 function Clear() {
@@ -141,14 +176,18 @@ function ReloadElement() {
 	LoadElement();
 }
 
-function LoadElement() {
+function LoadElement() {	
+	var id = $("#textboxId").val();
+	
 	$.couch.db(_dbName).query(function(doc) {
 		if (doc.DocType != undefined &&
-		doc.DocType == "Element")
+		doc.DocType == "Data")
 			emit(doc._id, doc);
 		},null, null, {
+		key : id,
 		success : function(data) {
-			LoadSelectionElement(data);
+			_element = data.rows[0].value;
+			SetJSONElement();
 		},
 		error : function(data) {
 			$("body").text("ERROR: "+data);
@@ -156,38 +195,103 @@ function LoadElement() {
 	});
 }
 
-function SetJSONElement(element) {
-	$("#textboxFormularBezeichnung").val(formular.Bezeichnung);	
-	$("#textboxId").val(formular._id);
-	$("#textboxRev").val(formular._rev);
+function SetJSONElement() {
+	$("#textboxId").val(_element._id);
+	$("#textboxRev").val(_element._rev);
+	
+	LoadFormulare();
+}
 
-	$(formular.Felder).each( function() {
-		AddFeld(this.Bezeichnung, this.Anzahl, this.IsAnzuzeigen);
-	});
+function AddFeld(feld) {	
+	var container = $("<div></div>");
+	$(container).attr("name", "feld");
+	$(container).attr("bezeichnung", feld.Bezeichnung);
+	
+	var labelBezeichnung = $("<label></label>");
+	$(labelBezeichnung).attr("name", "bezeichnung");
+	$(labelBezeichnung).append(feld.Bezeichnung + ": ");
+	$(container).append($(labelBezeichnung));
+		
+	if (feld.IsListe == "true")	
+	{
+		if (_element == null)
+		{
+			$(container).append(CreateWertTextbox());
+		}
+		else
+		{
+			for (var i = 0; i < _element.Felder.length; i++)
+			{
+				if (_element.Felder[i].Bezeichnung == feld.Bezeichnung)
+				{
+					alert(JSON.stringify(_element.Felder[i].Wert));
+					$(_element.Felder[i].Wert).each( function () {
+						$(container).append(CreateWertTextbox(this));
+					});
+					break;
+				}	
+			}
+		}
+		
+		var buttonAddWert = $("<input></input>");
+		$(buttonAddWert).attr("type", "button");
+		$(buttonAddWert).attr("value", "Hinzufügen");
+		$(buttonAddWert).attr("onclick", "javascript:AddFeldValueControl(\"" + feld.Bezeichnung + "\");");
+		$(container).append($(buttonAddWert));
+	}
+	else
+	{
+		if (_element == null)
+		{
+			$(container).append(CreateWertTextbox());
+		}
+		else
+		{
+			for (var i = 0; i < _element.Felder.length; i++)
+			{
+				if (_element.Felder[i].Bezeichnung == feld.Bezeichnung)
+				{
+					$(container).append(CreateWertTextbox(_element.Felder[i].Wert));				
+					break;
+				}	
+			}
+		}
+	}
+	
+	var labelAnzuzeigen = $("<label></label>");
+	$(labelAnzuzeigen).attr("name", "information");
+	$(labelAnzuzeigen).append("Anzuzeigen bei Suchen: " + (feld.IsAnzuzeigen == "true" ? "Ja" : "Nein"));
+	$(container).append($(labelAnzuzeigen));
+		
+	$("#divFelder").append($(container));
+}
+
+function CreateWertTextbox(wert) {
+	var textbox = $("<input></input>");
+	$(textbox).attr("name", "wert");
+	$(textbox).attr("type", "text");
+	
+	if (wert != undefined)
+		$(textbox).val(wert);
+	
+	return $(textbox);
+}
+
+function IsElementZuLaden() {
+	if ($("#textboxId").val() != "")
+		return true;
+
+	return false;
+}
+
+function AddFeldValueControl(feldBezeichnung) {
+	
+	$("[bezeichnung="+feldBezeichnung+"] input[type=button]").before("<input name=wert type=text></input>");
 }
 
 function New() {
 	$("#divFormulare").empty();
 	Clear();
-}
-
-function Load() {
-	var id = $("#dropdownFormulare").val();
-	
-	Clear();
-	
-	$.couch.db(_dbName).query(function(doc) {
-		emit(doc._id, doc);
-	}, null, null, { 
-	key : id,
-	success : function(data) {
-		if (parseInt(data.total_rows) > 0)
-			SetJSONFormular(data.rows[0].value);
-	},
-	error : function(data) {
-		$("body").text("ERROR: "+data);
-	}}
-	);
 }
 
 function Save() {
@@ -222,22 +326,6 @@ function Delete() {
 	);
 }
 
-function AddFeld(feld) {
-	var feldHTML = "";
-	feldHTML += "<div name=feld bezeichnung=" + feld.Bezeichnung + ">";
-	feldHTML += "<label name=bezeichnung>" + feld.Bezeichnung + ": </label><input name=wert type=text></input>";
-	feldHTML += "<input name=maxAnzahl type=hidden value=" + feld.Anzahl + "></input>";
-	feldHTML += "<label name=information>Anzuzeigen bei Suchen: " + (feld.IsAnzuzeigen == "true" ? "Ja" : "Nein") + "</label>";
-	feldHTML += "</div>";
-	$("#divFelder").append(feldHTML);
-}
-
-function IsElementZuLaden() {
-	if ($("#textboxId").val() != "")
-		return true;
-
-	return false;
-}
 </script>
 </head>
 <body>

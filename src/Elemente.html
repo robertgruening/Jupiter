@@ -1,0 +1,117 @@
+<html>
+<head>
+<meta charset=utf-8>
+<script src="/_utils/script/jquery.js"></script>
+<script src="/_utils/script/jquery.couch.js"></script>
+<script>
+var _dbName = "jupiter";
+
+
+$(document).ready( function() {
+	LoadElemente();
+});
+
+function ReloadElemente() {
+	LoadElemente();
+}
+
+function LoadElemente() {	
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+		doc.DocType == "Data")
+			emit(doc.Formular, doc);
+		},null, null, {
+		success : function(data) {
+			LoadTabelleElemente(data);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function LoadTableHeader() {
+	var htmlHeader = "<tr>";
+	htmlHeader += "<th>#</th>";
+	htmlHeader += "<th>Formular</th>";
+	htmlHeader += "<th>Kurzbeschreibung</th>";
+	htmlHeader += "<th>Bearbeiten</th>";
+	htmlHeader += "<th>Löschen</th>";
+	htmlHeader+= "</tr>";
+	$("#ergebnisTabelle").append(htmlHeader);
+}
+
+function LoadTabelleElemente(elemente) {
+	$("#ergebnisTabelle").empty();
+	LoadTableHeader();
+	
+	for (var i = 0; i < elemente.total_rows; i++) {
+		var htmlZeile = "<tr>";
+		htmlZeile += "<td>"+(i+1)+"</td>";
+		htmlZeile += "<td>"+elemente.rows[i].value.Formular+"</td>";
+		htmlZeile += "<td>" + GetKurzbeschreibung(elemente.rows[i].value) + "</td>";
+		htmlZeile += "<td>" + GetEditButton(elemente.rows[i].value) + "</td>";
+		htmlZeile += "<td>" + GetDeleteButton(elemente.rows[i].value) + "</td>";
+		htmlZeile+= "</tr>";
+		$("#ergebnisTabelle").append(htmlZeile);
+	}
+}
+
+function GetKurzbeschreibung(element) {
+	var kurzbeschreibung = "";
+	for (var i = 0; i < element.Felder.length; i++)
+	{
+		kurzbeschreibung += GetKurzbeschreibungFromFeld(element.Felder[i]);
+		if (i < (element.Felder.length - 1))
+			kurzbeschreibung += ", ";
+	}
+	
+	return kurzbeschreibung;
+}
+
+function GetKurzbeschreibungFromFeld(feld) {
+	var kurzbeschreibung = "";
+	kurzbeschreibung += feld.Bezeichnung + ": ";
+	kurzbeschreibung += feld.Wert;
+	
+	return kurzbeschreibung;
+}
+
+function GetDeleteButton(element) {
+	var htmlDeleteButton = "";
+	htmlDeleteButton += "<input type=button onclick='javascript:Delete(\""+element._id+"\", \""+element._rev+"\")' value=Löschen></input>";
+	
+	return htmlDeleteButton;
+}
+
+function Delete(elementId, elementRev) {
+	
+	var doc = {
+		"_id" : elementId,
+		"_rev" : elementRev
+	};
+
+	$.couch.db(_dbName).removeDoc(doc, {
+	key : elementId,
+	success : function(data) {
+		alert("Das Element wurde gelöscht!");
+		ReloadElemente();
+	},
+	error : function(data) {
+		alert("Fehler: " + data);
+	}}
+	);
+}
+
+function GetEditButton(element) {
+	var htmlEditButton = "";
+	htmlEditButton += "<a href='http://localhost:5984/jupiter/app/Element.html?id=" + element._id + "&revision=" + element._rev + "'>Bearbeiten</a>";
+	
+	return htmlEditButton;
+}
+</script>
+</head>
+<body>
+<table id=ergebnisTabelle></table>
+</body>
+</html>

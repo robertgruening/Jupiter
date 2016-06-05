@@ -35,7 +35,7 @@ function LoadFormulare() {
 	$.couch.db(_dbName).query(function(doc) {
 		if (doc.DocType != undefined &&
 		doc.DocType == "Formular")
-			emit(doc._id, doc);
+			emit(doc.Bezeichnung, doc);
 		},null, null, {
 		success : function(data) {
 			LoadSelectionFormulare(data);
@@ -109,7 +109,7 @@ function GetFelder() {
 	$("#divFelder [name='feld']").each( function() {
 		var feld = {};
 		feld.Bezeichnung = $("[name='bezeichnung']", this).val();
-		feld.Anzahl = $("[name='anzahl']", this).val();
+		feld.IsListe = $("[name='isListe']", this).val();
 		feld.IsAnzuzeigen = $("[name='isAnzuzeigen'] :selected", this).val();
 		felder.push(feld);
 	});
@@ -123,7 +123,7 @@ function SetJSONFormular(formular) {
 	$("#textboxRev").val(formular._rev);
 
 	$(formular.Felder).each( function() {
-		AddFeld(this.Bezeichnung, this.Anzahl, this.IsAnzuzeigen);
+		AddFeld(this);
 	});
 }
 
@@ -183,14 +183,14 @@ function Delete() {
 	);
 }
 
-function AddFeld(bezeichnung, anzahl, isAnzuzeigen) {
-	var feld = "";
-	feld += "<div name=feld>";
-	feld += "Bezeichnung: <input name=bezeichnung type=text value=" + (bezeichnung == undefined ? "" : bezeichnung) + "></input>";
-	feld += "Max. Anzahl: <input name=anzahl type=text value=" + (anzahl == undefined ? 1 : anzahl) + " ></input>";
-	feld += "Anzuzeigen bei Suchen: <select name=isAnzuzeigen ><option value=true "+ (isAnzuzeigen == "true" ? "selected" : "")+">Ja</input><option value=false "+ (isAnzuzeigen == "false" ? "selected" : "")+">Nein</option></select>";
-	feld += "</div>";
-	$("#divFelder").append(feld);
+function AddFeld(feld) {
+	var feldHTML = "";
+	feldHTML += "<div name=feld>";
+	feldHTML += "Bezeichnung: <input name=bezeichnung type=text value=" + (feld.Bezeichnung == undefined ? "" : feld.Bezeichnung) + "></input>";
+	feldHTML += "Mehr als 1x: <select name=isListe ><option value=true "+(feld.IsListe == "true" ? "selected" : "")+">Ja</option><option value=false "+((feld.IsListe == "false" || feld.IsListe == undefined) ? "selected" : "")+">Nein</option></select>";
+	feldHTML += "Anzuzeigen bei Suchen: <select name=isAnzuzeigen ><option value=true "+ (feld.IsAnzuzeigen == "true" ? "selected" : "")+">Ja</option><option value=false "+ (feld.IsAnzuzeigen == "false" ? "selected" : "")+">Nein</option></select>";
+	feldHTML += "</div>";
+	$("#divFelder").append(feldHTML);
 }
 
 function IsFormularZuLaden() {
