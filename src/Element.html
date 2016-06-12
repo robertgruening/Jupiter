@@ -202,15 +202,28 @@ function SetJSONElement() {
 	LoadFormulare();
 }
 
+function CreateLabel(text) {	
+	var label = $("<label></label>");
+	$(label).append(text);
+	
+	return $(label);
+}
+
+function CreateButtonAddWert(feld) {
+	var buttonAddWert = $("<input></input>");
+	$(buttonAddWert).attr("type", "button");
+	$(buttonAddWert).attr("value", "Hinzufügen");
+	$(buttonAddWert).attr("onclick", "javascript:AddFeldValueControl(\"" + feld.Bezeichnung + "\");");
+	
+	return $(buttonAddWert);
+}
+
 function AddFeld(feld) {	
 	var container = $("<div></div>");
 	$(container).attr("name", "feld");
 	$(container).attr("bezeichnung", feld.Bezeichnung);
 	
-	var labelBezeichnung = $("<label></label>");
-	$(labelBezeichnung).attr("name", "bezeichnung");
-	$(labelBezeichnung).append(feld.Bezeichnung + ": ");
-	$(container).append($(labelBezeichnung));
+	$(container).append(CreateLabel(feld.Bezeichnung + ": "));
 		
 	if (feld.IsListe == "true")	
 	{
@@ -231,13 +244,9 @@ function AddFeld(feld) {
 					break;
 				}	
 			}
-		}
+		}		
 		
-		var buttonAddWert = $("<input></input>");
-		$(buttonAddWert).attr("type", "button");
-		$(buttonAddWert).attr("value", "Hinzufügen");
-		$(buttonAddWert).attr("onclick", "javascript:AddFeldValueControl(\"" + feld.Bezeichnung + "\");");
-		$(container).append($(buttonAddWert));
+		$(container).append(CreateButtonAddWert(feld));
 	}
 	else
 	{

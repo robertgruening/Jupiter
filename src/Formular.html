@@ -137,7 +137,7 @@ function Load() {
 	
 	Clear();
 	
-	$.couch.db(_dbName).query(function(doc) {
+	$.couch.db(_dbName).query(function(doc) {		
 		emit(doc._id, doc);
 	}, null, null, { 
 	key : id,
@@ -184,13 +184,88 @@ function Delete() {
 }
 
 function AddFeld(feld) {
-	var feldHTML = "";
-	feldHTML += "<div name=feld>";
-	feldHTML += "Bezeichnung: <input name=bezeichnung type=text value=" + (feld.Bezeichnung == undefined ? "" : feld.Bezeichnung) + "></input>";
-	feldHTML += "Mehr als 1x: <select name=isListe ><option value=true "+(feld.IsListe == "true" ? "selected" : "")+">Ja</option><option value=false "+((feld.IsListe == "false" || feld.IsListe == undefined) ? "selected" : "")+">Nein</option></select>";
-	feldHTML += "Anzuzeigen bei Suchen: <select name=isAnzuzeigen ><option value=true "+ (feld.IsAnzuzeigen == "true" ? "selected" : "")+">Ja</option><option value=false "+ (feld.IsAnzuzeigen == "false" ? "selected" : "")+">Nein</option></select>";
-	feldHTML += "</div>";
-	$("#divFelder").append(feldHTML);
+	var bezeichnung = "";
+	if (feld != undefined && feld.Bezeichnung != undefined)
+		bezeichnung = feld.Bezeichnung;
+		
+	var isListe = "false";
+	if (feld != undefined && feld.IsListe != undefined)
+		isListe = feld.IsListe;
+		
+	var isAnzuzeigen = "true";
+	if (feld != undefined && feld.IsAnzuzeigen != undefined)
+		isAnzuzeigen = feld.IsAnzuzeigen;
+
+	var container = $("<div></div>");
+	$(container).attr("name", "feld");
+	$(container).attr("class", "feld");
+	
+	var id = $.now();	
+	$(container).attr("id", id);
+	
+	$(container).append(CreateLabel("Bezeichnung: "));
+	$(container).append(CreateTextbox("bezeichnung", bezeichnung));
+	
+	$(container).append(CreateLabel("Mehr als 1x: "));
+	$(container).append(CreateYesNoDropDown("isListe", isListe));
+	
+	$(container).append(CreateLabel("Anzuzeigen bei Suchen: "));
+	$(container).append(CreateYesNoDropDown("isAnzuzeigen", isAnzuzeigen));
+	
+	$(container).append(CreateButtonRemoveFeld(id));
+	
+	$("#divFelder").append($(container));
+}
+
+function CreateTextbox(name, text) {
+	var textbox = $("<input></input>");
+	$(textbox).attr("type", "text");
+	$(textbox).attr("name", name);
+	$(textbox).attr("value", text);
+	
+	return $(textbox);
+}
+
+function CreateYesNoDropDown(name, selection) {	
+	var yesNoDropDown = $("<select></select>");	
+	$(yesNoDropDown).attr("name", name);
+	
+	var yesOption = $("<option></option>");	
+	$(yesOption).attr("value", "true");
+	$(yesOption).append("Ja");
+	
+	if (selection == "true")
+		$(yesOption).attr("selected", "");
+		
+	$(yesNoDropDown).append($(yesOption));
+	
+	var noOption = $("<option></option>");	
+	$(noOption).attr("value", "false");
+	$(noOption).append("Nein");
+	
+	if (selection == "false")
+		$(noOption).attr("selected", "");		
+		
+	$(yesNoDropDown).append($(noOption));
+	
+	return $(yesNoDropDown);	
+}
+
+function CreateLabel(text) {	
+	var label = $("<label></label>");
+	$(label).append(text);
+	
+	return $(label);
+}
+
+function CreateButtonRemoveFeld(fieldId) {
+	var buttonRemoveFeld = $("<input></input>");
+	$(buttonRemoveFeld).attr("type", "button");
+	$(buttonRemoveFeld).attr("value", "Löschen");
+	$(buttonRemoveFeld).attr("class", "buttonDelete");
+	$(buttonRemoveFeld).attr("onclick", "javascript:RemoveFeldControl(\"" + fieldId + "\");");
+	
+	return $(buttonRemoveFeld);
 }
 
 function IsFormularZuLaden() {
@@ -199,21 +274,72 @@ function IsFormularZuLaden() {
 
 	return false;
 }
+
+function RemoveFeldControl(fieldId) {
+	$("#"+fieldId).remove();
+}
 </script>
+<style>	
+input[type=button] {
+	min-width:100px;
+}
+
+input[type=text] {
+	min-width:200px;
+}
+
+select {
+	min-width: 100px;
+}
+
+#divFormulare {
+	padding: 10px 0 20px 0;
+}
+
+#divFelder {
+	padding-top: 5px;
+}
+
+.feld {
+	padding: 10px 0 10px 0;
+	border-top: 1px dashed gray;
+}
+
+.feld label{
+	padding-left: 10px;
+}
+
+#buttonAddFeld {
+	float: right;
+}
+
+#divButtons {
+	padding-top: 20px;
+	border-top: 1px dashed gray;
+}
+
+.buttonDelete {
+	float: right;
+}
+
+#divNewFormular {
+	padding-bottom:40px;
+}
+</style>
 </head>
 <body>
 <div id=divFormulare></div>
 <div id=divNewFormular>
-	Bezeichnung: <input id=textboxFormularBezeichnung type=text></input></br>
-	Id: <input id=textboxId type=text></input></br>
-	Rev: <input id=textboxRev type=text></input></br>
-	<div id=divFelder>
-		
-	</div>	
-	<input id=buttonAddFeld onclick=javascript:AddFeld() type=button value="Feld hinzufügen"></input></br>
+	<div class=feld><label>Bezeichnung: </label><input id=textboxFormularBezeichnung type=text></input></div>
+	<div class=feld><label>Id: </label><input id=textboxId type=text></input></div>
+	<div class=feld><label>Rev: </label><input id=textboxRev type=text></input></div>
+	<div id=divFelder></div>
+	<input id=buttonAddFeld onclick=javascript:AddFeld() type=button value="Feld hinzufügen"></input>
+</div>
+<div id=divButtons>
 	<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
 	<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
-	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen></input>
+	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen class=buttonDelete></input>
 </div>
 </body>
 </html>
