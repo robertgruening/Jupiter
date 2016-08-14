@@ -135,13 +135,10 @@ function GetJSONElement() {
 }
 
 function GetFelder() {
-	var felder = new Array();
+	var felder = {};
 
 	$("#divFelder [name='feld']").each( function() {
-		var feld = {};
-		feld.Bezeichnung = GetFeldBezeichnung(this);
-		feld.Wert = GetFeldWerte(this);
-		felder.push(feld);
+		felder[GetFeldBezeichnung(this)] = GetFeldWerte(this);
 	});
 
 	return felder;
@@ -221,6 +218,7 @@ function CreateButtonAddWert(feld) {
 function AddFeld(feld) {	
 	var container = $("<div></div>");
 	$(container).attr("name", "feld");
+	$(container).attr("class", "feld");
 	$(container).attr("bezeichnung", feld.Bezeichnung);
 	
 	$(container).append(CreateLabel(feld.Bezeichnung + ": "));
@@ -233,12 +231,11 @@ function AddFeld(feld) {
 		}
 		else
 		{
-			for (var i = 0; i < _element.Felder.length; i++)
+			for (var i = 0; i < Object.keys(_element.Felder).length; i++)
 			{
-				if (_element.Felder[i].Bezeichnung == feld.Bezeichnung)
+				if (Object.keys(_element.Felder)[i] == feld.Bezeichnung)
 				{
-					alert(JSON.stringify(_element.Felder[i].Wert));
-					$(_element.Felder[i].Wert).each( function () {
+					$(_element.Felder[Object.keys(_element.Felder)[i]]).each( function () {
 						$(container).append(CreateWertTextbox(this));
 					});
 					break;
@@ -256,11 +253,11 @@ function AddFeld(feld) {
 		}
 		else
 		{
-			for (var i = 0; i < _element.Felder.length; i++)
+			for (var i = 0; i < Object.keys(_element.Felder).length; i++)
 			{
-				if (_element.Felder[i].Bezeichnung == feld.Bezeichnung)
+				if (Object.keys(_element.Felder)[i] == feld.Bezeichnung)
 				{
-					$(container).append(CreateWertTextbox(_element.Felder[i].Wert));				
+					$(container).append(CreateWertTextbox(_element.Felder[Object.keys(_element.Felder)[i]]));				
 					break;
 				}	
 			}
@@ -336,15 +333,63 @@ function Delete() {
 }
 
 </script>
+<style>	
+input[type=button] {
+	min-width:100px;
+}
+
+input[type=text] {
+	min-width:200px;
+}
+
+select {
+	min-width: 100px;
+}
+
+#divFormulare {
+	padding: 10px 0 20px 0;
+	display: inline;
+}
+
+#divFelder {
+	padding-top: 5px;
+}
+
+.feld {
+	padding: 10px 0 10px 0;
+	border-top: 1px dashed gray;
+}
+
+.feld label{
+	padding-left: 10px;
+}
+
+#buttonAddFeld {
+	float: right;
+}
+
+#divButtons {
+	padding-top: 20px;
+	border-top: 1px dashed gray;
+}
+
+.buttonDelete {
+	float: right;
+}
+
+#divNewElement {
+	padding-bottom:40px;
+}
+</style>
 </head>
 <body>
 <div id=divNewElement>
-	Id: <input id=textboxId type=text></input></br>
-	Rev: <input id=textboxRev type=text></input></br>
-	Formular: <div id=divFormulare></div></br>
-	<div id=divFelder>
-		
-	</div>
+	<div class=feld><label>Id: </label><input id=textboxId type=text></input></div>
+	<div class=feld><label>Rev: </label><input id=textboxRev type=text></input></div>
+	<div class=feld><label>Formular: </label><div id=divFormulare></div></div>
+	<div id=divFelder></div>
+</div>
+<div id=divButtons>
 	<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
 	<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
 	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen></input>

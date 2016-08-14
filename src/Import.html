@@ -1,0 +1,45 @@
+<html>
+<head>
+<meta charset=utf-8>
+<script src="/_utils/script/jquery.js"></script>
+<script src="/_utils/script/jquery.couch.js"></script>
+<script>
+var _dbName = "jupiter";
+
+$(document).ready( function() {
+});
+
+function Import() {
+	ImportData($("#formular").val());
+}
+
+function ImportData(formularName) {
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+			doc.DocType == "Formular")
+		{
+			emit(doc.Bezeichnung, doc);
+		}
+	}, null, null, {
+	key : formularName,
+	success : function(data) {		
+		if (parseInt(data.total_rows) > 0)
+			console.log(data.rows[0].value);
+			
+		return (parseInt(data.total_rows) > 0);
+	},
+	error : function(data) {
+		$("body").text("ERROR: "+data);
+	}}
+	);
+}
+</script>
+<style>
+</style>
+<body>
+<input id=import onclick=javascript:Import() type=button value=Importieren></input><br/>
+<label>Names der Formularvorlage: </label><input id=formular type=text></input><br/>
+<textarea id=data></textarea>
+</body>
+</head>
+</html>

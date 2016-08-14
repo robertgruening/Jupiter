@@ -59,20 +59,20 @@ function LoadTabelleElemente(elemente) {
 
 function GetKurzbeschreibung(element) {
 	var kurzbeschreibung = "";
-	for (var i = 0; i < element.Felder.length; i++)
+	for (var i = 0; i < Object.keys(element.Felder).length; i++)
 	{
-		kurzbeschreibung += GetKurzbeschreibungFromFeld(element.Felder[i]);
-		if (i < (element.Felder.length - 1))
+		kurzbeschreibung += GetKurzbeschreibungFromFeld(Object.keys(element.Felder)[i], element.Felder[Object.keys(element.Felder)[i]]);
+		if (i < (Object.keys(element.Felder).length - 1))
 			kurzbeschreibung += ", ";
 	}
 	
 	return kurzbeschreibung;
 }
 
-function GetKurzbeschreibungFromFeld(feld) {
+function GetKurzbeschreibungFromFeld(key, value) {
 	var kurzbeschreibung = "";
-	kurzbeschreibung += feld.Bezeichnung + ": ";
-	kurzbeschreibung += feld.Wert;
+	kurzbeschreibung += key + ": ";
+	kurzbeschreibung += value;
 	
 	return kurzbeschreibung;
 }
