@@ -23,15 +23,73 @@ function ImportData(formularName) {
 	}, null, null, {
 	key : formularName,
 	success : function(data) {		
-		if (parseInt(data.total_rows) > 0)
-			console.log(data.rows[0].value);
+		if (parseInt(data.total_rows) > 0 &&
+			data.rows[0] != undefined)
+		{
+			var lines = $("#data").val().split('\n');
 			
-		return (parseInt(data.total_rows) > 0);
+			if (lines.length < 2)
+			{
+				console.log("Es müssen mindestens eine Kopfzeile und eine Datenzeile im Textfeld stehen.");
+				return;
+			}
+			
+			if (lines[0].trim() == "")
+			{
+				console.log("Die erste Zeile muss die Kopfzeile sein.");
+				return;
+			}
+			
+			for (var i = 1; i < lines.length; i++)
+			{
+				var element = GetJSONElement(data.rows[0].value, lines[0].split(';'), lines[i].split(';'));
+				console.log(JSON.stringify(element));
+			}
+			
+			
+			//console.log(data.rows[0].value);
+		}
+		else
+		{
+			console.log("Kein Formular mit diesem Namen gefunden. Import kann nicht durchgeführt werden.");
+		}
 	},
 	error : function(data) {
 		$("body").text("ERROR: "+data);
 	}}
 	);
+}
+
+function GetJSONElement(formular, spaltenNamen, daten) {
+	var element = {
+		"DocType" : "Data",
+		"Formular" : formular.Bezeichnung,
+		"Felder" : GetFelder(formular, spaltenNamen, daten)		
+	};
+	
+	return element;
+}
+
+function GetFelder(formular, spaltenNamen, daten) {
+	var felder = {};
+	
+	for (var i = 0; i < daten.length; i++)
+	{
+		for (var j = 0; j < formular.Felder.length; j++)
+		{	
+			if (spaltenNamen[i] == formular.Felder[j].Bezeichnung &&
+				formular.Felder[j].IsListe == "true")
+			{
+				felder[spaltenNamen[i]] = daten[i].split(',');
+				break;
+			}
+		}
+		
+		if (felder[spaltenNamen[i]] == undefined)
+			felder[spaltenNamen[i]] = daten[i].trim();
+	}
+
+	return felder;
 }
 </script>
 <style>
