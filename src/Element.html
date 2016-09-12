@@ -55,17 +55,26 @@ function LoadFormulare() {
 }
 
 function LoadSelectionFormulare(formulare) {
-	$("#divFormulare").empty();
+	$("#dropdownFormulare").empty();
 	
-	var selectTag = "<select id=dropdownFormulare>";
 	for (var i = 0; i < formulare.total_rows; i++)
 	{
-		selectTag += "<option value="+formulare.rows[i].value._id+" rev="+formulare.rows[i].value._rev+">"+formulare.rows[i].value.Bezeichnung+"</option>";
+		$("#dropdownFormulare").append($("<option value="+formulare.rows[i].value._id+" rev="+formulare.rows[i].value._rev+">"+formulare.rows[i].value.Bezeichnung+"</option>"));
 	}
-	selectTag += "</select>";
-	$("#divFormulare").append(selectTag);
 	
-	SelectFormular();
+	if (_element != undefined)
+	{
+		for (var i = 0; i < formulare.total_rows; i++)
+		{
+			if (formulare.rows[i].value.Bezeichnung == _element.Formular)
+			{
+				_element.Formular = formulare.rows[i].value;
+				break;
+			}
+		}
+	}
+	
+	SelectFormular();	
 
 	RegisterSelectionFormulare_Change();
 	RegisterSelectionFormulare_Select();
@@ -103,11 +112,24 @@ function LoadFormularFelder() {
 		key : id,
 		success : function(data) {
 			SetFormularFelder(data.rows[0].value);
+			
+			if (_element != undefined)
+				AddElementFelderNotInFormular(data.rows[0].value);
 		},
 		error : function(data) {
 			$("body").text("ERROR: "+data);
 		}
 	});
+}
+
+function IsFeldKnown(formular, feldBezeichnung) {
+	for (var j = 0; j < formular.Felder.length; j++)
+	{
+		if (formular.Felder[j].Bezeichnung == feldBezeichnung)
+			return true;
+	}
+	
+	return false;
 }
 
 function SetFormularFelder(formular) {	
@@ -116,6 +138,21 @@ function SetFormularFelder(formular) {
 	$(formular.Felder).each( function() {
 		AddFeld(this);
 	});
+}
+
+function AddElementFelderNotInFormular(formular) {
+	for (var i = 0; i < Object.keys(_element.Felder).length; i++)
+	{		
+		if (!IsFeldKnown(formular, Object.keys(_element.Felder)[i]))
+		{
+			var feldNotInFormular = new Object();
+			feldNotInFormular.Bezeichnung = Object.keys(_element.Felder)[i];
+			feldNotInFormular.IsListe = false;
+			feldNotInFormular.IsAnzuzeigen = false;
+			
+			AddFeld(feldNotInFormular, false);
+		}
+	}
 }
 
 function GetJSONElement() {
@@ -163,6 +200,9 @@ function GetFeldWerte(htmlContainer) {
 }
 
 function Clear() {
+	_element = null;
+	
+	$("#dropdownFormulare").empty();
 	$("#textboxFormularBezeichnung").val("");	
 	$("#textboxId").val("");
 	$("#textboxRev").val("");
@@ -215,61 +255,75 @@ function CreateButtonAddWert(feld) {
 	return $(buttonAddWert);
 }
 
-function AddFeld(feld) {	
+function AddFeld(feld, isKnownByFormular) {	
 	var container = $("<div></div>");
 	$(container).attr("name", "feld");
 	$(container).attr("class", "feld");
+		
+	if (isKnownByFormular != undefined &&
+		!isKnownByFormular)
+	{
+		$(container).attr("class", "feld unknown");
+	}
+	
 	$(container).attr("bezeichnung", feld.Bezeichnung);
 	
-	$(container).append(CreateLabel(feld.Bezeichnung + ": "));
-		
-	if (feld.IsListe == "true")	
+	$(container).append(CreateLabelFeldBezeichnung(feld.Bezeichnung));
+	
+	if (_element == null)
 	{
-		if (_element == null)
-		{
-			$(container).append(CreateWertTextbox());
-		}
-		else
-		{
-			for (var i = 0; i < Object.keys(_element.Felder).length; i++)
-			{
-				if (Object.keys(_element.Felder)[i] == feld.Bezeichnung)
-				{
-					$(_element.Felder[Object.keys(_element.Felder)[i]]).each( function () {
-						$(container).append(CreateWertTextbox(this));
-					});
-					break;
-				}	
-			}
-		}		
-		
-		$(container).append(CreateButtonAddWert(feld));
+		$(container).append("<br/>");
+		$(container).append(CreateWertTextbox());
 	}
 	else
 	{
-		if (_element == null)
+		if (feld.IsListe == "true")	
 		{
-			$(container).append(CreateWertTextbox());
+			if (_element.Felder[feld.Bezeichnung] == undefined ||
+				_element.Felder[feld.Bezeichnung].length == 0)
+			{
+				$(container).append("<br/>");
+				$(container).append(CreateWertTextbox());
+			}
+			else
+			{			
+				$(_element.Felder[feld.Bezeichnung]).each( function () {
+					$(container).append("<br/>");
+					$(container).append(CreateWertTextbox(this));
+				});
+			}
 		}
 		else
 		{
-			for (var i = 0; i < Object.keys(_element.Felder).length; i++)
-			{
-				if (Object.keys(_element.Felder)[i] == feld.Bezeichnung)
-				{
-					$(container).append(CreateWertTextbox(_element.Felder[Object.keys(_element.Felder)[i]]));				
-					break;
-				}	
-			}
-		}
+			$(container).append("<br/>");
+			$(container).append(CreateWertTextbox(_element.Felder[feld.Bezeichnung]));
+		}		
 	}
 	
-	var labelAnzuzeigen = $("<label></label>");
-	$(labelAnzuzeigen).attr("name", "information");
-	$(labelAnzuzeigen).append("Anzuzeigen bei Suchen: " + (feld.IsAnzuzeigen == "true" ? "Ja" : "Nein"));
-	$(container).append($(labelAnzuzeigen));
-		
+	if (feld.IsListe == "true")	
+	{
+		$(container).append("<br/>");
+		$(container).append(CreateButtonAddWert(feld));
+	}
+			
+	$(container).append("<br/>");
+	$(container).append(CreateLabelFeldIsAnzuzeigen(feld.IsAnzuzeigen));
+	
 	$("#divFelder").append($(container));
+}
+
+function CreateLabelFeldBezeichnung(feldBezeichnung) {	
+	var labelBezeichnung = CreateLabel(feldBezeichnung + ":");
+	$(labelBezeichnung).attr("class", "feldBezeichung");
+	
+	return $(labelBezeichnung);
+}
+
+function CreateLabelFeldIsAnzuzeigen(isAnzuzeigen) {	
+	var labelFeldIsAnzuzeigen = CreateLabel("Anzuzeigen bei Suchen: " + (isAnzuzeigen == "true" ? "Ja" : "Nein"));
+	$(labelFeldIsAnzuzeigen).attr("name", "information");
+	
+	return $(labelFeldIsAnzuzeigen);
 }
 
 function CreateWertTextbox(wert) {
@@ -284,20 +338,20 @@ function CreateWertTextbox(wert) {
 }
 
 function IsElementZuLaden() {
-	if ($("#textboxId").val() != "")
-		return true;
+	if ($("#textboxId").val() == "")
+		return false;
 
-	return false;
+	return true;
 }
 
-function AddFeldValueControl(feldBezeichnung) {
-	
+function AddFeldValueControl(feldBezeichnung) {	
 	$("[bezeichnung="+feldBezeichnung+"] input[type=button]").before("<input name=wert type=text></input>");
+	$("[bezeichnung="+feldBezeichnung+"] input[type=button]").before("<br/>");
 }
 
 function New() {
-	$("#divFormulare").empty();
 	Clear();
+	LoadFormulare();
 }
 
 function Save() {
@@ -343,12 +397,7 @@ input[type=text] {
 }
 
 select {
-	min-width: 100px;
-}
-
-#divFormulare {
-	padding: 10px 0 20px 0;
-	display: inline;
+	min-width: 200px;
 }
 
 #divFelder {
@@ -360,8 +409,16 @@ select {
 	border-top: 1px dashed gray;
 }
 
-.feld label{
-	padding-left: 10px;
+.feld * {
+	margin-left: 40px;
+}
+
+.feld .feldBezeichung {
+	margin-left: 10px;
+}
+
+.feld.unknown {
+	color: red;
 }
 
 #buttonAddFeld {
@@ -384,9 +441,9 @@ select {
 </head>
 <body>
 <div id=divNewElement>
-	<div class=feld><label>Id: </label><input id=textboxId type=text></input></div>
-	<div class=feld><label>Rev: </label><input id=textboxRev type=text></input></div>
-	<div class=feld><label>Formular: </label><div id=divFormulare></div></div>
+	<div class=feld><label class=feldBezeichung>Id: </label><br/><input id=textboxId type=text></input></div>
+	<div class=feld><label class=feldBezeichung>Rev: </label><br/><input id=textboxRev type=text></input></div>
+	<div class=feld><label class=feldBezeichung>Formular: </label><br/><select id=dropdownFormulare></select></div>
 	<div id=divFelder></div>
 </div>
 <div id=divButtons>

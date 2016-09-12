@@ -47,14 +47,18 @@ function LoadTabelleElemente(elemente) {
 	
 	for (var i = 0; i < elemente.total_rows; i++) {
 		var htmlZeile = "<tr>";
-		htmlZeile += "<td>"+(i+1)+"</td>";
-		htmlZeile += "<td>"+elemente.rows[i].value.Formular+"</td>";
+		htmlZeile += "<td>" + (i+1) + "</td>";
+		htmlZeile += "<td>" + GetFormular(elemente.rows[i].value) + "</td>";
 		htmlZeile += "<td>" + GetKurzbeschreibung(elemente.rows[i].value) + "</td>";
 		htmlZeile += "<td>" + GetEditButton(elemente.rows[i].value) + "</td>";
 		htmlZeile += "<td>" + GetDeleteButton(elemente.rows[i].value) + "</td>";
 		htmlZeile+= "</tr>";
 		$("#ergebnisTabelle").append(htmlZeile);
 	}
+}
+
+function GetFormular(element) {
+	return element.Formular;
 }
 
 function GetKurzbeschreibung(element) {

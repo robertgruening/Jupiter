@@ -14,6 +14,8 @@ function Import() {
 }
 
 function ImportData(formularName) {
+	$("#statusLog").empty();
+	
 	$.couch.db(_dbName).query(function(doc) {
 		if (doc.DocType != undefined &&
 			doc.DocType == "Formular")
@@ -30,28 +32,25 @@ function ImportData(formularName) {
 			
 			if (lines.length < 2)
 			{
-				console.log("Es müssen mindestens eine Kopfzeile und eine Datenzeile im Textfeld stehen.");
+				$("#statusLog").append("Es müssen mindestens eine Kopfzeile und eine Datenzeile im Textfeld stehen.<br/>");
 				return;
 			}
 			
 			if (lines[0].trim() == "")
 			{
-				console.log("Die erste Zeile muss die Kopfzeile sein.");
+				$("#statusLog").append("Die erste Zeile muss die Kopfzeile sein.<br/>");
 				return;
 			}
 			
 			for (var i = 1; i < lines.length; i++)
 			{
-				var element = GetJSONElement(data.rows[0].value, lines[0].split(';'), lines[i].split(';'));
-				console.log(JSON.stringify(element));
+				var element = GetJSONElement(data.rows[0].value, lines[0].split(','), lines[i].split(','));
+				Save(element);
 			}
-			
-			
-			//console.log(data.rows[0].value);
 		}
 		else
 		{
-			console.log("Kein Formular mit diesem Namen gefunden. Import kann nicht durchgeführt werden.");
+			$("#statusLog").append("Kein Formular mit diesem Namen gefunden. Import kann nicht durchgeführt werden.<br/>");
 		}
 	},
 	error : function(data) {
@@ -59,6 +58,18 @@ function ImportData(formularName) {
 	}}
 	);
 }
+
+function Save(element) {
+	$.couch.db(_dbName).saveDoc(element, {
+	success : function(data) {
+		$("#statusLog").append("Das Element wurde gespeichert! " + JSON.stringify(data) + "<br/>");
+	},
+	error : function(data) {
+		$("#statusLog").append("Fehler: " + data + "<br/>");
+	}
+	});
+}
+
 
 function GetJSONElement(formular, spaltenNamen, daten) {
 	var element = {
@@ -80,13 +91,16 @@ function GetFelder(formular, spaltenNamen, daten) {
 			if (spaltenNamen[i] == formular.Felder[j].Bezeichnung &&
 				formular.Felder[j].IsListe == "true")
 			{
-				felder[spaltenNamen[i]] = daten[i].split(',');
+				felder[spaltenNamen[i]] = daten[i].split(';');
 				break;
 			}
 		}
 		
-		if (felder[spaltenNamen[i]] == undefined)
+		if (felder[spaltenNamen[i]] == undefined &&
+			daten[i].trim() != "")
+		{
 			felder[spaltenNamen[i]] = daten[i].trim();
+		}
 	}
 
 	return felder;
@@ -97,7 +111,8 @@ function GetFelder(formular, spaltenNamen, daten) {
 <body>
 <input id=import onclick=javascript:Import() type=button value=Importieren></input><br/>
 <label>Names der Formularvorlage: </label><input id=formular type=text></input><br/>
-<textarea id=data></textarea>
+<textarea id=data></textarea><br/>
+<div id=statusLog></div>
 </body>
 </head>
 </html>
