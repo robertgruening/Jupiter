@@ -62,20 +62,7 @@ function LoadSelectionFormulare(formulare) {
 		$("#dropdownFormulare").append($("<option value="+formulare.rows[i].value._id+" rev="+formulare.rows[i].value._rev+">"+formulare.rows[i].value.Bezeichnung+"</option>"));
 	}
 	
-	if (_element != undefined)
-	{
-		for (var i = 0; i < formulare.total_rows; i++)
-		{
-			if (formulare.rows[i].value.Bezeichnung == _element.Formular)
-			{
-				_element.Formular = formulare.rows[i].value;
-				break;
-			}
-		}
-	}
-	
-	SelectFormular();	
-
+	SelectFormular();
 	RegisterSelectionFormulare_Change();
 	RegisterSelectionFormulare_Select();
 	LoadFormularFelder();
@@ -224,6 +211,7 @@ function LoadElement() {
 		key : id,
 		success : function(data) {
 			_element = data.rows[0].value;
+			console.log(JSON.stringify(_element));
 			SetJSONElement();
 		},
 		error : function(data) {

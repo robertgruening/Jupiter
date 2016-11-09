@@ -22,7 +22,12 @@ function LoadElemente() {
 			emit(doc.Formular, doc);
 		},null, null, {
 		success : function(data) {
-			LoadTabelleElemente(data);
+			$("#ergebnisse").empty();
+			
+			console.log("Ergebnisse: " + data.total_rows);
+			
+			if (data.total_rows >= 1)
+				LoadTabellen(data.rows);
 		},
 		error : function(data) {
 			$("body").text("ERROR: "+data);
@@ -30,55 +35,140 @@ function LoadElemente() {
 	});
 }
 
-function LoadTableHeader() {
+function LoadTabellen(elemente) {
+	var currentFormular = elemente[0].value.Formular;
+	
+	console.log(currentFormular);
+	
+	var gruppierteElemente = new Array();
+	gruppierteElemente.push(new Array());
+	
+	for (var i = 0; i < elemente.length; i++)
+	{
+		if (elemente[i].value.Formular != currentFormular)
+		{
+			currentFormular = elemente[i].value.Formular;
+			
+			console.log(currentFormular);
+			
+			gruppierteElemente.push(new Array());
+		}
+		
+		gruppierteElemente[gruppierteElemente.length - 1].push(elemente[i].value);
+	}
+		
+	console.log("Gruppen: " + gruppierteElemente.length);
+	
+	for (var i = 0; i < gruppierteElemente.length; i++)
+	{
+		LoadTabelle(gruppierteElemente[i]);
+	}
+}
+
+function LoadTabelle(elemente) {
+	if (elemente.length == 0)
+		return;
+		
+	var formularBezeichnung = elemente[0].Formular;
+	
+	console.log("Gesuchtes Formular: " + formularBezeichnung);
+		
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+		doc.DocType == "Formular")
+			emit(doc.Bezeichnung, doc);
+		},null, null, {
+		key : formularBezeichnung,
+		success : function(data) {	
+						
+			console.log("Gefundene Formulare: " + data.total_rows);
+			
+			if (data.total_rows > 0)
+				LoadTabelleElemente(data.rows[0].value, elemente);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function LoadTabelleElemente(formular, elemente)
+{	
+	var html = "<h2>" + formular.Bezeichnung + "</h2>";
+	html += "<table>";
+	html += LoadTableHeader(formular);
+	
+	for (var i = 0; i < elemente.length; i++)
+	{
+		html += LoadTableBodyRow(i + 1, formular, elemente[i]);
+	}
+	
+	html += "</table>";
+	$("#ergebnisse").append(html);
+}
+
+function LoadTableBodyRow(ergebnisNr, formular, element)
+{
+	var htmlBodyRow = "<tr>";
+	htmlBodyRow += "<td class=ergebnisNummer>" + (ergebnisNr) + "</td>";	
+	
+	for (var i = 0; i < formular.Felder.length; i++)
+	{
+		if (formular.Felder[i].IsAnzuzeigen == "true")
+		{
+			htmlBodyRow += "<td class=formularFeld>";
+			
+			if (element.Felder[formular.Felder[i].Bezeichnung] != undefined)
+			{			
+				if (formular.Felder[i].IsListe == "true")
+				{
+					htmlBodyRow += "<ul>";
+					
+					for (var j = 0; j < element.Felder[formular.Felder[i].Bezeichnung].length; j++)
+					{
+						htmlBodyRow += "<li>" + element.Felder[formular.Felder[i].Bezeichnung][j] + "</li>";
+					}
+					
+					htmlBodyRow += "</ul>";
+				}
+				else
+				{
+					htmlBodyRow += element.Felder[formular.Felder[i].Bezeichnung];
+				}
+			}
+			
+			htmlBodyRow += "</td>";
+		}
+	}
+	
+	htmlBodyRow += "<td>" + GetEditButton(element) + "</td>";
+	htmlBodyRow += "<td>" + GetDeleteButton(element) + "</td>";
+	htmlBodyRow += "</tr>";
+	
+	return htmlBodyRow;
+}
+
+function LoadTableHeader(formular)
+{
 	var htmlHeader = "<tr>";
 	htmlHeader += "<th>#</th>";
-	htmlHeader += "<th>Formular</th>";
-	htmlHeader += "<th>Kurzbeschreibung</th>";
+	
+	for (var i = 0; i < formular.Felder.length; i++)
+	{
+		if (formular.Felder[i].IsAnzuzeigen == "true")
+			htmlHeader += "<th>" + formular.Felder[i].Bezeichnung + "</th>";
+	}
+	
 	htmlHeader += "<th>Bearbeiten</th>";
 	htmlHeader += "<th>Löschen</th>";
-	htmlHeader+= "</tr>";
-	$("#ergebnisTabelle").append(htmlHeader);
-}
-
-function LoadTabelleElemente(elemente) {
-	$("#ergebnisTabelle").empty();
-	LoadTableHeader();
+	htmlHeader += "</tr>";
 	
-	for (var i = 0; i < elemente.total_rows; i++) {
-		var htmlZeile = "<tr>";
-		htmlZeile += "<td>" + (i+1) + "</td>";
-		htmlZeile += "<td>" + GetFormular(elemente.rows[i].value) + "</td>";
-		htmlZeile += "<td>" + GetKurzbeschreibung(elemente.rows[i].value) + "</td>";
-		htmlZeile += "<td>" + GetEditButton(elemente.rows[i].value) + "</td>";
-		htmlZeile += "<td>" + GetDeleteButton(elemente.rows[i].value) + "</td>";
-		htmlZeile+= "</tr>";
-		$("#ergebnisTabelle").append(htmlZeile);
-	}
+	return htmlHeader;
 }
 
-function GetFormular(element) {
+function GetFormular(element)
+{
 	return element.Formular;
-}
-
-function GetKurzbeschreibung(element) {
-	var kurzbeschreibung = "";
-	for (var i = 0; i < Object.keys(element.Felder).length; i++)
-	{
-		kurzbeschreibung += GetKurzbeschreibungFromFeld(Object.keys(element.Felder)[i], element.Felder[Object.keys(element.Felder)[i]]);
-		if (i < (Object.keys(element.Felder).length - 1))
-			kurzbeschreibung += ", ";
-	}
-	
-	return kurzbeschreibung;
-}
-
-function GetKurzbeschreibungFromFeld(key, value) {
-	var kurzbeschreibung = "";
-	kurzbeschreibung += key + ": ";
-	kurzbeschreibung += value;
-	
-	return kurzbeschreibung;
 }
 
 function GetDeleteButton(element) {
@@ -114,8 +204,21 @@ function GetEditButton(element) {
 	return htmlEditButton;
 }
 </script>
+<style>
+td {
+	vertical-align: top;
+	border-bottom: 1px dashed black;
+}
+	
+.feldName {
+	font-weight: bold;
+}
+
+.feldWert {
+}
+</style>
 </head>
 <body>
-<table id=ergebnisTabelle></table>
+<div id=ergebnisse></div>
 </body>
 </html>
