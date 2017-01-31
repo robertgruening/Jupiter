@@ -5,6 +5,7 @@
 <script src="/_utils/script/jquery.couch.js"></script>
 <script>
 var _dbName = "jupiter";
+var _formular = null;
 
 
 $(document).ready( function() {
@@ -143,7 +144,10 @@ function Load() {
 	key : id,
 	success : function(data) {
 		if (parseInt(data.total_rows) > 0)
-			SetJSONFormular(data.rows[0].value);
+		{
+			_formular = data.rows[0].value;
+			SetJSONFormular(_formular);
+		}
 	},
 	error : function(data) {
 		$("body").text("ERROR: "+data);
@@ -152,13 +156,99 @@ function Load() {
 }
 
 function Save() {
-	$.couch.db(_dbName).saveDoc(GetJSONFormular(), {
+	var newFormular = GetJSONFormular();
+	
+	if (_formular != null)
+	{
+		UpdateElemente(_formular, newFormular);
+	}	
+	
+	$.couch.db(_dbName).saveDoc(newFormular, {
 	success : function(data) {
 		alert("Das Formular wurde gespeichert!");
 		ReloadFormulare();
 	},
 	error : function(data) {
 		alert("Fehler: " + data);
+	}
+	});
+}
+
+function UpdateElemente(oldFormular, newFormular) {
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+		doc.DocType == "Data")
+			emit(doc.Formular, doc);
+		},null, null, {
+		key : oldFormular.Bezeichnung,
+		success : function(data) {
+			for (var i = 0; i < data.rows.length; i++)
+			{
+				console.log("Altes Element: " + JSON.stringify(data.rows[i].value));
+				data.rows[i].value.Formular = newFormular.Bezeichnung;
+				data.rows[i].value = UpdateElementFelder(data.rows[i].value, oldFormular, newFormular);
+				console.log("Neues Element: " + JSON.stringify(data.rows[i].value));
+				SaveElement(data.rows[i].value);
+			}
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function UpdateElementFelder(element, oldFormular, newFormular) {
+	for (var i = 0; i < oldFormular.Felder.length; i++)
+	{	
+		console.log("Zu aktualisierendes Feld: " + oldFormular.Felder[i].Bezeichnung + " -> " + newFormular.Felder[i].Bezeichnung);
+		
+		if (element.Felder[oldFormular.Felder[i].Bezeichnung] == undefined ||
+			element.Felder[oldFormular.Felder[i].Bezeichnung] == "")
+		{
+			console.log("Das alte Feld existiert nicht oder hat keinen Wert.");
+			
+			if (element.Felder[newFormular.Felder[i].Bezeichnung] == undefined ||
+				element.Felder[newFormular.Felder[i].Bezeichnung] == "")
+			{
+				console.log("Das neue Feld existiert nicht oder hat keinen Wert.");
+				element.Felder[newFormular.Felder[i].Bezeichnung] = "";
+			}
+			else
+			{
+				console.log("Das neue Feld existiert und hat einen Wert.");
+			}			
+		}
+		else
+		{
+			console.log("Das alte Feld existiert und hat einen Wert.");
+			
+			if (element.Felder[newFormular.Felder[i].Bezeichnung] == undefined ||
+				element.Felder[newFormular.Felder[i].Bezeichnung] == "")
+			{
+				console.log("Das neue Feld existiert nicht oder hat keinen Wert.");
+				element.Felder[newFormular.Felder[i].Bezeichnung] = element.Felder[oldFormular.Felder[i].Bezeichnung];
+			}
+			else
+			{
+				console.log("Das neue Feld existiert und hat einen Wert.");
+				element.Felder[newFormular.Felder[i].Bezeichnung] += element.Felder[oldFormular.Felder[i].Bezeichnung];
+			}
+		}
+		
+		element.Felder[oldFormular.Felder[i].Bezeichnung] = undefined;
+	}
+	
+	return element;
+}
+
+function SaveElement(element) {
+	console.log(JSON.stringify(element));
+	$.couch.db(_dbName).saveDoc(element, {
+	success : function(data) {
+		console.log("Das Element wurde gespeichert! " + JSON.stringify(data));
+	},
+	error : function(data) {
+		console.log("Fehler: " + data);
 	}
 	});
 }

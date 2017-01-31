@@ -5,8 +5,6 @@
 <script src="/_utils/script/jquery.couch.js"></script>
 <script>
 var _dbName = "jupiter";
-var _fieldSeparator = ',';
-var _listSeparator = ';';
 
 $(document).ready( function() {
 });
@@ -46,7 +44,7 @@ function ImportData(formularName) {
 			
 			for (var i = 1; i < lines.length; i++)
 			{
-				var element = GetJSONElement(data.rows[0].value, lines[0].split(_fieldSeparator), lines[i].split(_fieldSeparator));
+				var element = GetJSONElement(data.rows[0].value, lines[0].split(_fieldSeparator), lines[i].split($("#spaltentrennzeichen").val()));
 				Save(element);
 			}
 		}
@@ -93,7 +91,7 @@ function GetFelder(formular, spaltenNamen, daten) {
 			if (spaltenNamen[i] == formular.Felder[j].Bezeichnung &&
 				formular.Felder[j].IsListe == "true")
 			{
-				felder[spaltenNamen[i]] = daten[i].split(_listSeparator);
+				felder[spaltenNamen[i]] = daten[i].split($("#listentrennzeichen").val());
 				break;
 			}
 		}
@@ -116,6 +114,8 @@ function GetFelder(formular, spaltenNamen, daten) {
 </style>
 <body>
 <label>Names der Formularvorlage: </label><input id=formular type=text></input><br/>
+<label>Spaltentrennzeichen: </label><input id=spaltentrennzeichen type=text value=';'></input><br/>
+<label>Listentrennzeichen: </label><input id=listentrennzeichen type=text value=','></input><br/>
 <textarea id=data></textarea><br/>
 <input id=import onclick=javascript:Import() type=button value=Importieren></input><br/>
 <div id=statusLog></div>

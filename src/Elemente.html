@@ -5,22 +5,114 @@
 <script src="/_utils/script/jquery.couch.js"></script>
 <script>
 var _dbName = "jupiter";
+var _felder = null;
 
 
 $(document).ready( function() {
-	LoadElemente();
+	$("#suchen").click(LoadElemente);
+	LoadFormulare();
+	LoadFelder();
 });
+
+function LoadFelder() {	
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+			doc.DocType == "Formular")
+		{
+			for (var i = 0; i < doc.Felder.length; i++)
+			{
+				emit (doc.Felder[i].Bezeichnung, doc.Felder[i]);
+			}
+		}
+		},null, null, {
+		success : function(data) {
+			LoadSelectionFelder(data.rows);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function LoadSelectionFelder(felder) {
+	$("#feldFilter").empty();
+	_felder = new Array();
+	
+	for (var i = 0; i < felder.length; i++)
+	{
+		_felder.push(felder[i].value);
+		console.log(felder[i].value);
+	}
+		
+	var selectTag = "<input id=buttonCreateSelectionFeld type=button value=Hinzufügen></input>";
+	$("#feldFilter").append(selectTag);
+	
+	$("#buttonCreateSelectionFeld").click(CreateSelectionFeld);
+}
+
+function CreateSelectionFeld() {
+	var selectTag = "";
+	selectTag += "<select name=selectionFeld>";
+	for (var i = 0; i < _felder.length; i++)
+	{
+		selectTag += "<option>" + _felder[i].Bezeichnung + "</option>";
+	}
+	selectTag += "</select>";
+	selectTag += "<input type=text></input>";
+	$("#feldFilter").append(selectTag);
+}
+
+function LoadFormulare() {
+	$.couch.db(_dbName).query(function(doc) {
+		if (doc.DocType != undefined &&
+		doc.DocType == "Formular")
+			emit(doc.Bezeichnung, doc);
+		},null, null, {
+		success : function(data) {
+			LoadSelectionFormulare(data);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function LoadSelectionFormulare(formulare) {
+	$("#formularFilter").empty();
+	
+	var selectTag = "";
+	for (var i = 0; i < formulare.total_rows; i++)
+	{
+		selectTag += "<input type=checkbox name=formularSelect value='"+formulare.rows[i].value.Bezeichnung+"'>"+formulare.rows[i].value.Bezeichnung+"</input>";
+		console.log("Created checkbox: " + formulare.rows[i].value.Bezeichnung);
+	}
+	$("#formularFilter").append(selectTag);
+}
 
 function ReloadElemente() {
 	LoadElemente();
 }
 
-function LoadElemente() {	
+function LoadElemente() {
+	var selectedFormulare = new Array();
+	
+	$("#formularFilter input:checked").each( function(index)	{
+		selectedFormulare.push($(this).val());
+		console.log("Checked checkbox: " + $(this).val());
+	});
+	
+	var selectedFelder = new Array();
+	$("#feldFilter select[name='selectionFeld']").each( function(index)	{
+		selectedFelder.push($(this).val());
+		console.log("Selected dropdown: " + $(this).val());
+	});	
+		
 	$.couch.db(_dbName).query(function(doc) {
 		if (doc.DocType != undefined &&
 		doc.DocType == "Data")
 			emit(doc.Formular, doc);
 		},null, null, {
+		keys : JSON.stringify(selectedFormulare),
 		success : function(data) {
 			$("#ergebnisse").empty();
 			
@@ -219,6 +311,9 @@ td {
 </style>
 </head>
 <body>
+<input type=button id=suchen value="Suchen"></input>
+<div id=formularFilter></div>
+<div id=feldFilter></div>
 <div id=ergebnisse></div>
 </body>
 </html>
