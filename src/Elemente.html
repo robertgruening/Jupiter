@@ -52,13 +52,15 @@ function LoadSelectionFelder(felder) {
 
 function CreateSelectionFeld() {
 	var selectTag = "";
+	selectTag += "<div name=filter >";
 	selectTag += "<select name=selectionFeld>";
 	for (var i = 0; i < _felder.length; i++)
 	{
 		selectTag += "<option>" + _felder[i].Bezeichnung + "</option>";
 	}
 	selectTag += "</select>";
-	selectTag += "<input type=text></input>";
+	selectTag += "<input type=text></input>";	
+	selectTag += "</div>";
 	$("#feldFilter").append(selectTag);
 }
 
@@ -93,7 +95,46 @@ function ReloadElemente() {
 	LoadElemente();
 }
 
+function LoadElementeByFeldAndValue()
+{
+	var keyPairs = new Array();
+	
+	$("[name=filter]").each(
+	function(index, value){
+		var keyPair = new Array();
+		keyPair.push($("[name=selectionFeld] :selected", this).val());
+		keyPair.push($("input", this).val().toLowerCase());
+		
+		keyPairs.push(keyPair);
+		
+		console.log(JSON.stringify(keyPairs));
+	});	
+	
+	var startKey = keyPairs[0].slice();
+	var endKey = keyPairs[0].slice();
+	endKey[1] += "\\u9999";
+		
+	$.couch.db(_dbName).view("KeyPair/GetByFeldNameAndWert",
+	{
+		startkey : startKey,
+		endkey : endKey,
+		success : function(data) {
+			$("#ergebnisse").empty();
+			
+			console.log("Ergebnisse: " + data.rows.length);
+			
+			if (data.rows.length >= 1)
+				LoadTabellen(data.rows);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
 function LoadElemente() {
+	LoadElementeByFeldAndValue();
+	/*
 	var selectedFormulare = new Array();
 	
 	$("#formularFilter input:checked").each( function(index)	{
@@ -124,7 +165,7 @@ function LoadElemente() {
 		error : function(data) {
 			$("body").text("ERROR: "+data);
 		}
-	});
+	});*/
 }
 
 function LoadTabellen(elemente) {
