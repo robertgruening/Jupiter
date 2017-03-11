@@ -112,9 +112,9 @@ function LoadElementeByFeldAndValue()
 	
 	var startKey = keyPairs[0].slice();
 	var endKey = keyPairs[0].slice();
-	endKey[1] += "\\u9999";
+	endKey[1] += "\u9999";
 		
-	$.couch.db(_dbName).view("KeyPair/GetByFeldNameAndWert",
+	$.couch.db(_dbName).view("GetElements/ByFieldNameAndValue",
 	{
 		startkey : startKey,
 		endkey : endKey,
@@ -352,9 +352,10 @@ td {
 </style>
 </head>
 <body>
-<input type=button id=suchen value="Suchen"></input>
 <div id=formularFilter></div>
 <div id=feldFilter></div>
+<br/><br/>
+<input type=button id=suchen value="Suchen"></input>
 <div id=ergebnisse></div>
 </body>
 </html>
