@@ -6,7 +6,8 @@
 <script>
 var _dbName = "jupiter";
 var _felder = null;
-
+var _elements = new Array();
+var _filterIndex = 0;
 
 $(document).ready( function() {
 	$("#suchen").click(LoadElemente);
@@ -97,39 +98,95 @@ function ReloadElemente() {
 
 function LoadElementeByFeldAndValue()
 {
-	var keyPairs = new Array();
-	
-	$("[name=filter]").each(
-	function(index, value){
-		var keyPair = new Array();
-		keyPair.push($("[name=selectionFeld] :selected", this).val());
-		keyPair.push($("input", this).val().toLowerCase());
-		
-		keyPairs.push(keyPair);
-		
-		console.log(JSON.stringify(keyPairs));
-	});	
-	
-	var startKey = keyPairs[0].slice();
-	var endKey = keyPairs[0].slice();
-	endKey[1] += "\u9999";
-		
-	$.couch.db(_dbName).view("GetElements/ByFieldNameAndValue",
+	if (_filterIndex < $("[name=filter]").length)
 	{
-		startkey : startKey,
-		endkey : endKey,
-		success : function(data) {
-			$("#ergebnisse").empty();
+		var keyPairs = new Array();
+		
+		$("[name=filter]").each(
+		function(index, value){
+			var keyPair = new Array();
+			keyPair.push($("[name=selectionFeld] :selected", this).val());
+			keyPair.push($("input", this).val().toLowerCase());
 			
-			console.log("Ergebnisse: " + data.rows.length);
+			keyPairs.push(keyPair);
 			
-			if (data.rows.length >= 1)
-				LoadTabellen(data.rows);
-		},
-		error : function(data) {
-			$("body").text("ERROR: "+data);
-		}
-	});
+			console.log(JSON.stringify(keyPairs));
+		});	
+		
+		console.log("Filterindex: " + _filterIndex);
+		
+		var startKey = keyPairs[_filterIndex].slice();
+		var endKey = keyPairs[_filterIndex].slice();
+		endKey[1] += "\u9999";
+			
+		var address = "GetElements/ByFieldNameAndValue";
+		
+		if (_filterIndex > 0)	
+			address = "GetElementIds/ByFieldNameAndValue";
+			
+		$.couch.db(_dbName).view(address,
+		{
+			startkey : startKey,
+			endkey : endKey,
+			success : function(data) {
+				console.log("SUCCESS");
+				
+				if (_filterIndex == 0)
+				{
+					_elements = data.rows;
+					_filterIndex++;		
+					LoadElementeByFeldAndValue();
+				}
+				else
+				{
+					for (var i = 0; i < _elements.length;)
+					{
+						var isInFilterResult = false;
+						
+						for (var j = 0; j < data.rows.length; j++)
+						{
+							if (_elements[i].id == data.rows[j].id)
+							{
+								isInFilterResult = true;
+								break;
+							}
+						}
+						
+						if (!isInFilterResult)
+						{
+							_elements.splice(i, 1);
+						}
+						else
+						{
+							i++;
+						}
+					}
+					
+					_filterIndex++;
+					LoadElementeByFeldAndValue()
+				}
+				
+				console.log("Anzahl der Ergebniselemente: " + _elements.length);
+			},
+			error : function(data) {
+				console.log("ERROR");
+				
+				_filterIndex = 0;
+				$("body").text("ERROR: "+data);
+			}
+		});
+	}
+	else
+	{
+		_filterIndex = 0;
+		
+		$("#ergebnisse").empty();
+		
+		console.log("Ergebnisse: " + _elements.length);
+		
+		if (_elements.length >= 1)
+			LoadTabellen(_elements);
+	}
 }
 
 function LoadElemente() {
