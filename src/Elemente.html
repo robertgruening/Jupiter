@@ -4,45 +4,64 @@
 <script src="/_utils/script/jquery.js"></script>
 <script src="/_utils/script/jquery.couch.js"></script>
 <script>
-var _dbName = "jupiter";
 var _felder = null;
 var _elements = new Array();
 var _filterIndex = 0;
 
+function GetDatabaseName() {
+	return "jupiter";
+}
+
+function GetPageUrl(pageName) {
+	return "http://localhost:5984/" + GetDatabaseName() + "/app/" + pageName + ".html";
+}
+
 $(document).ready( function() {
 	$("#suchen").click(LoadElemente);
-	LoadFormulare();
+	LoadNavigation();
 	LoadFelder();
 });
 
+function LoadNavigation() {
+	var navigationElements = new Array();
+	navigationElements.push("Elemente");
+	navigationElements.push("Element");
+	navigationElements.push("Formular");
+	navigationElements.push("Import");
+	
+	$("#navigation").append("<ul></ul>");
+	
+	for (var i = 0; i < navigationElements.length; i++)
+	{	
+		$("#navigation ul").append("<li><a href='" + GetPageUrl(navigationElements[i]) + "' title=" + navigationElements[i] + ">" + navigationElements[i] + "</a></li>");
+	}
+	
+	$("#navigation ul li a[title='Elemente']").addClass("active");
+}
+
 function LoadFelder() {	
-	$.couch.db(_dbName).query(function(doc) {
-		if (doc.DocType != undefined &&
-			doc.DocType == "Formular")
-		{
-			for (var i = 0; i < doc.Felder.length; i++)
-			{
-				emit (doc.Felder[i].Bezeichnung, doc.Felder[i]);
-			}
-		}
-		},null, null, {
+	$.couch.db(GetDatabaseName()).view("GetFormular/ByBezeichnung",
+	{
 		success : function(data) {
 			LoadSelectionFelder(data.rows);
 		},
 		error : function(data) {
-			$("body").text("ERROR: "+data);
+			ShowError(data);
 		}
 	});
 }
 
-function LoadSelectionFelder(felder) {
+function LoadSelectionFelder(formulare) {
 	$("#feldFilter").empty();
 	_felder = new Array();
-	
-	for (var i = 0; i < felder.length; i++)
+		
+	for (var i = 0; i < formulare.length; i++)
 	{
-		_felder.push(felder[i].value);
-		console.log(felder[i].value);
+		for (var j = 0; j < formulare[i].value.Felder.length; j++)
+		{
+			console.log(formulare[i].value.Felder[j]);
+			_felder.push(formulare[i].value.Felder[j]);
+		}
 	}
 		
 	var selectTag = "<input id=buttonCreateSelectionFeld type=button value=Hinzufügen></input>";
@@ -55,48 +74,23 @@ function CreateSelectionFeld() {
 	var selectTag = "";
 	selectTag += "<div name=filter >";
 	selectTag += "<select name=selectionFeld>";
+	
 	for (var i = 0; i < _felder.length; i++)
 	{
 		selectTag += "<option>" + _felder[i].Bezeichnung + "</option>";
 	}
+	
 	selectTag += "</select>";
 	selectTag += "<input type=text></input>";	
 	selectTag += "</div>";
 	$("#feldFilter").append(selectTag);
 }
 
-function LoadFormulare() {
-	$.couch.db(_dbName).query(function(doc) {
-		if (doc.DocType != undefined &&
-		doc.DocType == "Formular")
-			emit(doc.Bezeichnung, doc);
-		},null, null, {
-		success : function(data) {
-			LoadSelectionFormulare(data);
-		},
-		error : function(data) {
-			$("body").text("ERROR: "+data);
-		}
-	});
-}
-
-function LoadSelectionFormulare(formulare) {
-	$("#formularFilter").empty();
-	
-	var selectTag = "";
-	for (var i = 0; i < formulare.total_rows; i++)
-	{
-		selectTag += "<input type=checkbox name=formularSelect value='"+formulare.rows[i].value.Bezeichnung+"'>"+formulare.rows[i].value.Bezeichnung+"</input>";
-		console.log("Created checkbox: " + formulare.rows[i].value.Bezeichnung);
-	}
-	$("#formularFilter").append(selectTag);
-}
-
 function ReloadElemente() {
 	LoadElemente();
 }
 
-function LoadElementeByFeldAndValue()
+function LoadElemente()
 {
 	if (_filterIndex < $("[name=filter]").length)
 	{
@@ -124,7 +118,7 @@ function LoadElementeByFeldAndValue()
 		if (_filterIndex > 0)	
 			address = "GetElementIds/ByFieldNameAndValue";
 			
-		$.couch.db(_dbName).view(address,
+		$.couch.db(GetDatabaseName()).view(address,
 		{
 			startkey : startKey,
 			endkey : endKey,
@@ -135,7 +129,7 @@ function LoadElementeByFeldAndValue()
 				{
 					_elements = data.rows;
 					_filterIndex++;		
-					LoadElementeByFeldAndValue();
+					LoadElemente();
 				}
 				else
 				{
@@ -163,16 +157,14 @@ function LoadElementeByFeldAndValue()
 					}
 					
 					_filterIndex++;
-					LoadElementeByFeldAndValue()
+					LoadElemente();
 				}
 				
 				console.log("Anzahl der Ergebniselemente: " + _elements.length);
 			},
 			error : function(data) {
-				console.log("ERROR");
-				
 				_filterIndex = 0;
-				$("body").text("ERROR: "+data);
+				ShowError(data);
 			}
 		});
 	}
@@ -187,42 +179,6 @@ function LoadElementeByFeldAndValue()
 		if (_elements.length >= 1)
 			LoadTabellen(_elements);
 	}
-}
-
-function LoadElemente() {
-	LoadElementeByFeldAndValue();
-	/*
-	var selectedFormulare = new Array();
-	
-	$("#formularFilter input:checked").each( function(index)	{
-		selectedFormulare.push($(this).val());
-		console.log("Checked checkbox: " + $(this).val());
-	});
-	
-	var selectedFelder = new Array();
-	$("#feldFilter select[name='selectionFeld']").each( function(index)	{
-		selectedFelder.push($(this).val());
-		console.log("Selected dropdown: " + $(this).val());
-	});	
-		
-	$.couch.db(_dbName).query(function(doc) {
-		if (doc.DocType != undefined &&
-		doc.DocType == "Data")
-			emit(doc.Formular, doc);
-		},null, null, {
-		keys : JSON.stringify(selectedFormulare),
-		success : function(data) {
-			$("#ergebnisse").empty();
-			
-			console.log("Ergebnisse: " + data.total_rows);
-			
-			if (data.total_rows >= 1)
-				LoadTabellen(data.rows);
-		},
-		error : function(data) {
-			$("body").text("ERROR: "+data);
-		}
-	});*/
 }
 
 function LoadTabellen(elemente) {
@@ -262,12 +218,8 @@ function LoadTabelle(elemente) {
 	var formularBezeichnung = elemente[0].Formular;
 	
 	console.log("Gesuchtes Formular: " + formularBezeichnung);
-		
-	$.couch.db(_dbName).query(function(doc) {
-		if (doc.DocType != undefined &&
-		doc.DocType == "Formular")
-			emit(doc.Bezeichnung, doc);
-		},null, null, {
+	$.couch.db(GetDatabaseName()).view("GetFormular/ByBezeichnung",
+	{
 		key : formularBezeichnung,
 		success : function(data) {	
 						
@@ -277,15 +229,14 @@ function LoadTabelle(elemente) {
 				LoadTabelleElemente(data.rows[0].value, elemente);
 		},
 		error : function(data) {
-			$("body").text("ERROR: "+data);
+			ShowError(data);
 		}
 	});
 }
 
-function LoadTabelleElemente(formular, elemente)
-{	
-	var html = "<h2>" + formular.Bezeichnung + "</h2>";
-	html += "<table>";
+function LoadTabelleElemente(formular, elemente) {	
+	var html = "<h2>" + formular.Bezeichnung + " (" + elemente.length + ")</h2>";
+	html += "<table cellspacing=0 cellpadding=0>";
 	html += LoadTableHeader(formular);
 	
 	for (var i = 0; i < elemente.length; i++)
@@ -297,8 +248,7 @@ function LoadTabelleElemente(formular, elemente)
 	$("#ergebnisse").append(html);
 }
 
-function LoadTableBodyRow(ergebnisNr, formular, element)
-{
+function LoadTableBodyRow(ergebnisNr, formular, element) {
 	var htmlBodyRow = "<tr>";
 	htmlBodyRow += "<td class=ergebnisNummer>" + (ergebnisNr) + "</td>";	
 	
@@ -338,8 +288,7 @@ function LoadTableBodyRow(ergebnisNr, formular, element)
 	return htmlBodyRow;
 }
 
-function LoadTableHeader(formular)
-{
+function LoadTableHeader(formular) {
 	var htmlHeader = "<tr>";
 	htmlHeader += "<th>#</th>";
 	
@@ -356,60 +305,101 @@ function LoadTableHeader(formular)
 	return htmlHeader;
 }
 
-function GetFormular(element)
-{
-	return element.Formular;
-}
-
 function GetDeleteButton(element) {
 	var htmlDeleteButton = "";
-	htmlDeleteButton += "<input type=button onclick='javascript:Delete(\""+element._id+"\", \""+element._rev+"\")' value=Löschen></input>";
+	htmlDeleteButton += "<input type=button onclick='javascript:Delete(\""+element._id+"\", \""+element._rev+"\")' value=Löschen>";
+	htmlDeleteButton += "</input>";
 	
 	return htmlDeleteButton;
 }
 
-function Delete(elementId, elementRev) {
-	
+function Delete(elementId, elementRev) {	
 	var doc = {
 		"_id" : elementId,
 		"_rev" : elementRev
 	};
 
-	$.couch.db(_dbName).removeDoc(doc, {
+	$.couch.db(GetDatabaseName()).removeDoc(doc, {
 	key : elementId,
 	success : function(data) {
-		alert("Das Element wurde gelöscht!");
+		ShowInfo("Das Element wurde gelöscht!");
 		ReloadElemente();
 	},
 	error : function(data) {
-		alert("Fehler: " + data);
+		ShowError(data);
 	}}
 	);
 }
 
 function GetEditButton(element) {
 	var htmlEditButton = "";
-	htmlEditButton += "<a href='http://localhost:5984/jupiter/app/Element.html?id=" + element._id + "&revision=" + element._rev + "'>Bearbeiten</a>";
+	htmlEditButton += "<a href='" + GetPageUrl("Element") +"?id=" + element._id + "&revision=" + element._rev + "'>";
+	htmlEditButton += "Bearbeiten";
+	htmlEditButton += "</a>";
 	
 	return htmlEditButton;
 }
+
+function ShowInfo(message) {
+	alert("Hinweis: " + JSON.stringify(data));
+}
+
+function ShowError(message) {
+	$("#divError").append("Fehler: " + JSON.stringify(data));
+}
 </script>
 <style>
+body {
+	font-family: Arial, Verdana;
+}	
+	
+th {
+	border-bottom: 1px solid black;
+}
+	
 td {
 	vertical-align: top;
 	border-bottom: 1px dashed black;
-}
-	
-.feldName {
-	font-weight: bold;
+	padding-right: 20px;
 }
 
-.feldWert {
+#navigation ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+}
+
+#navigation ul li {
+    float: left;
+}
+
+#navigation ul li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.active {
+    background-color: #4CAF50;
+}
+
+#navigation ul li a:hover {
+    background-color: #111;
+}
+
+#divError {
+	width: 100%;
+	color: red;
 }
 </style>
 </head>
 <body>
-<div id=formularFilter></div>
+<div id=navigation></div>
+<div id=divError></div>
 <div id=feldFilter></div>
 <br/><br/>
 <input type=button id=suchen value="Suchen"></input>
