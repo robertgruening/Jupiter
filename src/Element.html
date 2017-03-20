@@ -1,14 +1,18 @@
 <html>
 <head>
 <meta charset=utf-8>
+<link rel="stylesheet" type="text/css" href="/jupiter/app/screen.css">
 <script src="/_utils/script/jquery.js"></script>
 <script src="/_utils/script/jquery.couch.js"></script>
+<script src="/jupiter/app/navigation.js"></script>
 <script>
 var _dbName = "jupiter";
 var _element = null;
 
 
 $(document).ready( function() {
+	LoadNavigation("Element");
+	
 	$("#textboxId").prop("disabled", true);
 	$("#textboxRev").prop("disabled", true);
 	
@@ -428,16 +432,19 @@ select {
 </style>
 </head>
 <body>
-<div id=divNewElement>
-	<div class=feld><label class=feldBezeichung>Id: </label><br/><input id=textboxId type=text></input></div>
-	<div class=feld><label class=feldBezeichung>Rev: </label><br/><input id=textboxRev type=text></input></div>
-	<div class=feld><label class=feldBezeichung>Formular: </label><br/><select id=dropdownFormulare></select></div>
-	<div id=divFelder></div>
-</div>
-<div id=divButtons>
-	<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
-	<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
-	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen></input>
+<div id=navigation></div>
+<div id=content>
+	<div id=divNewElement>
+		<div class=feld><label class=feldBezeichung>Id: </label><br/><input id=textboxId type=text></input></div>
+		<div class=feld><label class=feldBezeichung>Rev: </label><br/><input id=textboxRev type=text></input></div>
+		<div class=feld><label class=feldBezeichung>Formular: </label><br/><select id=dropdownFormulare></select></div>
+		<div id=divFelder></div>
+	</div>
+	<div id=divButtons>
+		<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
+		<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
+		<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen></input>
+	</div>
 </div>
 </body>
 </html>

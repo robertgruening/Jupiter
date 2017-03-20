@@ -1,14 +1,18 @@
 <html>
 <head>
 <meta charset=utf-8>
+<link rel="stylesheet" type="text/css" href="/jupiter/app/screen.css">
 <script src="/_utils/script/jquery.js"></script>
 <script src="/_utils/script/jquery.couch.js"></script>
+<script src="/jupiter/app/navigation.js"></script>
 <script>
 var _dbName = "jupiter";
 var _formular = null;
 
 
 $(document).ready( function() {
+	LoadNavigation("Formular");
+	
 	$("#textboxId").prop("disabled", true);
 	$("#textboxRev").prop("disabled", true);
 	
@@ -418,18 +422,21 @@ select {
 </style>
 </head>
 <body>
-<div id=divFormulare></div>
-<div id=divNewFormular>
-	<div class=feld><label>Bezeichnung: </label><input id=textboxFormularBezeichnung type=text></input></div>
-	<div class=feld><label>Id: </label><input id=textboxId type=text></input></div>
-	<div class=feld><label>Rev: </label><input id=textboxRev type=text></input></div>
-	<div id=divFelder></div>
-	<input id=buttonAddFeld onclick=javascript:AddFeld() type=button value="Feld hinzufügen"></input>
-</div>
-<div id=divButtons>
-	<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
-	<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
-	<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen class=buttonDelete></input>
+<div id=navigation></div>
+<div id=content>
+	<div id=divFormulare></div>
+	<div id=divNewFormular>
+		<div class=feld><label>Bezeichnung: </label><input id=textboxFormularBezeichnung type=text></input></div>
+		<div class=feld><label>Id: </label><input id=textboxId type=text></input></div>
+		<div class=feld><label>Rev: </label><input id=textboxRev type=text></input></div>
+		<div id=divFelder></div>
+		<input id=buttonAddFeld onclick=javascript:AddFeld() type=button value="Feld hinzufügen"></input>
+	</div>
+	<div id=divButtons>
+		<input id=buttonNewFormular onclick=javascript:New() type=button value=Neu></input>
+		<input id=buttonSaveFormular onclick=javascript:Save() type=button value=Speichern></input>
+		<input id=buttonDeleteFormular onclick=javascript:Delete() type=button value=Löschen class=buttonDelete></input>
+	</div>
 </div>
 </body>
 </html>

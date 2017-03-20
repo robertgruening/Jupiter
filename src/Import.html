@@ -1,13 +1,28 @@
 <html>
 <head>
 <meta charset=utf-8>
+<link rel="stylesheet" type="text/css" href="/jupiter/app/screen.css">
 <script src="/_utils/script/jquery.js"></script>
 <script src="/_utils/script/jquery.couch.js"></script>
+<script src="/jupiter/app/navigation.js"></script>
 <script>
 var _dbName = "jupiter";
 
 $(document).ready( function() {
+	LoadNavigation("Import");
+	SetHeight();
 });
+
+function SetHeight() {
+	$("#content").css("height", 
+		$("body").css("height") - $("#navigation").css("height"));
+		
+	$("#importData").css("height",
+		$("#content").css("height") - 
+		$("#importConfiguration").css("height") - 
+		$("#buttons").css("height") - 
+		$("#statusLog").css("height"));
+}
 
 function Import() {
 	ImportData($("#formular").val());
@@ -28,7 +43,7 @@ function ImportData(formularName) {
 		if (parseInt(data.total_rows) > 0 &&
 			data.rows[0] != undefined)
 		{
-			var lines = $("#data").val().split('\n');
+			var lines = $("#importData textarea").val().split('\n');
 			
 			if (lines.length < 2)
 			{
@@ -106,19 +121,22 @@ function GetFelder(formular, spaltenNamen, daten) {
 	return felder;
 }
 </script>
-<style>
-#data {
-	width: 100%;
-	height: calc(100% - 150px);
-}
-</style>
 <body>
-<label>Names der Formularvorlage: </label><input id=formular type=text></input><br/>
-<label>Spaltentrennzeichen: </label><input id=spaltentrennzeichen type=text value=';'></input><br/>
-<label>Listentrennzeichen: </label><input id=listentrennzeichen type=text value=','></input><br/>
-<textarea id=data></textarea><br/>
-<input id=import onclick=javascript:Import() type=button value=Importieren></input><br/>
-<div id=statusLog></div>
+<div id=navigation></div>
+<div id=content>
+	<div id=importConfiguration>
+		<label>Names der Formularvorlage: </label><input id=formular type=text></input><br/>
+		<label>Spaltentrennzeichen: </label><input id=spaltentrennzeichen type=text value=';'></input><br/>
+		<label>Listentrennzeichen: </label><input id=listentrennzeichen type=text value=','></input><br/>
+	</div>
+	<div id=importData>
+		<textarea></textarea>
+	</div>	
+	<div id=buttons>
+		<input id=import onclick=javascript:Import() type=button value=Importieren></input>
+	</div>
+	<div id=statusLog></div>
+</div>
 </body>
 </head>
 </html>
