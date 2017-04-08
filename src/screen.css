@@ -1,13 +1,15 @@
 body {
 	margin: 0px;
 	font-family: Arial, Verdana;
+	height: 100%;
+	min-height: 400px;
 }	
 	
-th {
+.ergebnisse th {
 	border-bottom: 1px solid black;
 }
 	
-td {
+.ergebnisse td {
 	vertical-align: top;
 	border-bottom: 1px dashed black;
 	padding-right: 20px;
@@ -58,7 +60,12 @@ td {
 
 #importData textarea {
 	width: 100%;
-	height: 80%;
+	height: inherit;
+}
+
+#buttons {
+	overflow: auto;
+	padding: 5px 0px 5px 0px;
 }
 
 #buttons #import {

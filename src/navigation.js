@@ -12,6 +12,7 @@ function LoadNavigation(activePageName) {
 	navigationElements.push("Element");
 	navigationElements.push("Formular");
 	navigationElements.push("Import");
+	navigationElements.push("Export");
 	
 	$("#navigation").append("<ul></ul>");
 	

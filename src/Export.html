@@ -1,0 +1,173 @@
+<html>
+<head>
+<meta charset=utf-8>
+<link rel="stylesheet" type="text/css" href="/jupiter/app/screen.css">
+<script src="/_utils/script/jquery.js"></script>
+<script src="/_utils/script/jquery.couch.js"></script>
+<script src="/jupiter/app/navigation.js"></script>
+<script>
+var _dbName = "jupiter";
+
+$(document).ready( function() {
+	LoadNavigation("Export");
+});
+
+function CreateExportList()
+{
+	LoadFormulare();
+}
+
+function LoadFormulare()
+{
+	$.couch.db(GetDatabaseName()).view("GetFormular/ByBezeichnung",
+	{
+		success : function(data) {
+			CreateDownloadLinks(data);
+		},
+		error : function(data) {
+			$("body").text("ERROR: "+data);
+		}
+	});
+}
+
+function CreateDownloadLinks(formulare)
+{
+	console.log(formulare.total_rows + " Formulare");
+	
+	$("#divExport").empty();	
+	$("#divExport").append("<ul></ul>");
+	
+	for (var i = 0; i < formulare.rows.length; i++)
+	{
+		$("#divExport ul").append("<li name=\"" + formulare.rows[i].value.Bezeichnung + "\"></li>");
+		CreateDownloadLink(formulare.rows[i].value);
+	}
+}
+
+function CreateDownloadLink(formular)
+{
+	console.log("Creating download link for " + formular.Bezeichnung);
+	
+	var date = new Date();
+	$("li[name=" + formular.Bezeichnung + "]").append("<a name=\"" + formular.Bezeichnung + "\" download=\"" + date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDay() + "_" +formular.Bezeichnung + ".csv\">" + formular.Bezeichnung + " exportieren</a>");
+	LoadElemente(formular);
+}
+
+function LoadElemente(formular)
+{
+	$.couch.db(GetDatabaseName()).view("GetElements/ByFormular",
+	{
+		key : formular.Bezeichnung,
+		success : function(data) {
+			FillDownloadLink(formular, data);
+		},
+		error : function(data) {
+			ShowError(data);
+		}
+	});
+}
+
+function FillDownloadLink(formular, elemente)
+{
+	console.log(elemente.rows.length + " Elemente für " + formular.Bezeichnung);
+	
+	var csv = GetCsvTableHeaderRow(formular);
+	
+	for (var i = 0; i < elemente.rows.length; i++)
+	{
+		csv += GetCsvTableRow(formular, elemente.rows[i].value);
+	}
+	
+	console.log(csv);
+	console.log(encodeURI(csv));
+	
+	$("a[name=" + formular.Bezeichnung + "]").attr("href", "data:text/plain;charset=UTF-8," + encodeURI(csv));
+	$("a[name=" + formular.Bezeichnung + "]").text($("a[name=" + formular.Bezeichnung + "]").text() + " (" + elemente.rows.length + ")");
+}
+
+function GetCsvTableHeaderRow(formular)
+{
+	console.log(formular.Felder.length + " Felder in " + formular.Bezeichnung);
+	
+	var csvTableHeaderRow = "";
+	
+	for (var i = 0; i < formular.Felder.length; i++)
+	{
+		csvTableHeaderRow += GetStringMarker() + formular.Felder[i].Bezeichnung + GetStringMarker() + GetColumnSeparator();
+	}
+	
+	csvTableHeaderRow = csvTableHeaderRow.substring(0, csvTableHeaderRow.length - GetColumnSeparator().length);
+	csvTableHeaderRow += "\n";
+	
+	return csvTableHeaderRow;
+}
+
+function GetCsvTableRow(formular, element)
+{
+	var csvTableRow = "";	
+	
+	for (var i = 0; i < formular.Felder.length; i++)
+	{
+		if (element.Felder[formular.Felder[i].Bezeichnung] != undefined)
+		{
+			csvTableRow += GetStringMarker() + element.Felder[formular.Felder[i].Bezeichnung] + GetStringMarker();
+		}
+		
+		csvTableRow += GetColumnSeparator();
+	}
+	
+	csvTableRow = csvTableRow.substring(0, csvTableRow.length - GetColumnSeparator().length);
+	csvTableRow += "\n";
+	
+	return csvTableRow;
+}
+
+function GetStringMarker()
+{
+	// Review: import and export have to work compartible
+	//return '"';
+	return '';
+}
+
+function GetColumnSeparator()
+{
+	return $("#spaltentrennzeichen").val();
+}
+
+function GetArraySeparator()
+{
+	return $("#listentrennzeichen").val();
+}
+
+function ShowInfo(message) {
+	alert("Hinweis: " + JSON.stringify(data));
+}
+
+function ShowError(message) {
+	$("#divError").append("Fehler: " + JSON.stringify(data));
+}
+</script>
+</head>
+<body>
+<div id=navigation></div>
+<div id=content>
+	<div id=importConfiguration>
+		<table>
+			<tr>
+				<td><label>Spaltentrennzeichen: </label></td>
+				<td><input id=spaltentrennzeichen type=text value=';'></input></td>
+			</tr>
+			<tr>
+				<td><label>Listentrennzeichen: </label></td>
+				<td><input id=listentrennzeichen type=text value=','></input></td>
+			</tr>
+		</table>
+	</div>
+	<div id=buttons>
+		<input id=export onclick=javascript:CreateExportList() type=button value="Exportliste erzeugen"></input>
+	</div>
+	<div id=divError></div>
+	<div id=divExport></div>
+</div>
+</body>
+</html>
