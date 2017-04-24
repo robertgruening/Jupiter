@@ -67,7 +67,7 @@ function ImportData(formularName) {
 			
 			for (var i = 1; i < lines.length; i++)
 			{
-				var element = GetJSONElement(data.rows[0].value, lines[0].split(_fieldSeparator), lines[i].split($("#spaltentrennzeichen").val()));
+				var element = GetJSONElement(data.rows[0].value, lines[0].split($("#spaltentrennzeichen").val()), lines[i].split($("#spaltentrennzeichen").val()));
 				Save(element);
 			}
 		}

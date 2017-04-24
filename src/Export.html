@@ -49,7 +49,7 @@ function CreateDownloadLink(formular)
 	console.log("Creating download link for " + formular.Bezeichnung);
 	
 	var date = new Date();
-	$("li[name=" + formular.Bezeichnung + "]").append("<a name=\"" + formular.Bezeichnung + "\" download=\"" + date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDay() + "_" +formular.Bezeichnung + ".csv\">" + formular.Bezeichnung + " exportieren</a>");
+	$("li[name='" + formular.Bezeichnung + "']").append("<a name=\"" + formular.Bezeichnung + "\" download=\"" + date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDay() + "_" +formular.Bezeichnung + ".csv\">" + formular.Bezeichnung + " exportieren</a>");
 	LoadElemente(formular);
 }
 
@@ -81,8 +81,8 @@ function FillDownloadLink(formular, elemente)
 	console.log(csv);
 	console.log(encodeURI(csv));
 	
-	$("a[name=" + formular.Bezeichnung + "]").attr("href", "data:text/plain;charset=UTF-8," + encodeURI(csv));
-	$("a[name=" + formular.Bezeichnung + "]").text($("a[name=" + formular.Bezeichnung + "]").text() + " (" + elemente.rows.length + ")");
+	$("a[name='" + formular.Bezeichnung + "']").attr("href", "data:text/plain;charset=UTF-8," + encodeURI(csv));
+	$("a[name='" + formular.Bezeichnung + "']").text($("a[name='" + formular.Bezeichnung + "']").text() + " (" + elemente.rows.length + ")");
 }
 
 function GetCsvTableHeaderRow(formular)
@@ -140,11 +140,11 @@ function GetArraySeparator()
 }
 
 function ShowInfo(message) {
-	alert("Hinweis: " + JSON.stringify(data));
+	alert("Hinweis: " + JSON.stringify(message));
 }
 
 function ShowError(message) {
-	$("#divError").append("Fehler: " + JSON.stringify(data));
+	$("#divError").append("Fehler: " + JSON.stringify(message));
 }
 </script>
 </head>

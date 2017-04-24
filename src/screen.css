@@ -3,16 +3,23 @@ body {
 	font-family: Arial, Verdana;
 	height: 100%;
 	min-height: 400px;
+}
+
+#ergebnisse tr:hover, 
+#ergebnisse tr:hover a { 
+    background-color: #4CAF50;   
+    color: white;
 }	
 	
-.ergebnisse th {
+#ergebnisse th {
 	border-bottom: 1px solid black;
+	padding-right: 30px;
 }
 	
-.ergebnisse td {
+#ergebnisse td {
 	vertical-align: top;
 	border-bottom: 1px dashed black;
-	padding-right: 20px;
+	padding: 5px 20px 5px 10px;	
 }
 
 #navigation ul {
