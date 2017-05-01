@@ -33,6 +33,7 @@ function SetHeight() {
 }
 
 function Import() {
+	$("body").css("cursor", "wait");
 	ImportData($("#formular").val());
 }
 
@@ -75,9 +76,12 @@ function ImportData(formularName) {
 		{
 			$("#statusLog").append("Kein Formular mit diesem Namen gefunden. Import kann nicht durchgeführt werden.<br/>");
 		}
+		
+		$("body").css("cursor", "default");
 	},
 	error : function(data) {
 		$("body").text("ERROR: "+data);
+		$("body").css("cursor", "default");
 	}}
 	);
 }

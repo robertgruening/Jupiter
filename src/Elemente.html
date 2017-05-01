@@ -37,14 +37,28 @@ function LoadSelectionFelder(formulare) {
 	{
 		for (var j = 0; j < formulare[i].value.Felder.length; j++)
 		{
-			console.log(formulare[i].value.Felder[j]);
-			_felder.push(formulare[i].value.Felder[j]);
+			var contains = false;
+			
+			for (var k = 0; k < _felder.length; k++)
+			{				
+				if (_felder[k].Bezeichnung == formulare[i].value.Felder[j].Bezeichnung)
+				{
+					contains = true;
+					break;
+				}
+			}
+			
+			if (!contains)
+			{
+				_felder.push(formulare[i].value.Felder[j]);
+			}
 		}
 	}
+	
+	_felder.sort();
 		
 	var selectTag = "<input id=buttonCreateSelectionFeld type=button value=Hinzufügen></input>";
-	$("#feldFilter").append(selectTag);
-	
+	$("#feldFilter").append(selectTag);	
 	$("#buttonCreateSelectionFeld").click(CreateSelectionFeld);
 }
 
@@ -70,6 +84,8 @@ function ReloadElemente() {
 
 function LoadElemente()
 {
+	$("body").css("cursor", "wait");
+	
 	if (_filterIndex < $("[name=filter]").length)
 	{
 		var keyPairs = new Array();
@@ -78,31 +94,26 @@ function LoadElemente()
 		function(index, value){
 			var keyPair = new Array();
 			keyPair.push($("[name=selectionFeld] :selected", this).val());
-			keyPair.push($("input", this).val().toLowerCase());
-			
+			keyPair.push($("input", this).val().toLowerCase());			
 			keyPairs.push(keyPair);
-			
-			console.log(JSON.stringify(keyPairs));
 		});	
-		
-		console.log("Filterindex: " + _filterIndex);
-		
+				
 		var startKey = keyPairs[_filterIndex].slice();
 		var endKey = keyPairs[_filterIndex].slice();
 		endKey[1] += "\u9999";
 			
 		var address = "GetElements/ByFieldNameAndValue";
 		
-		if (_filterIndex > 0)	
+		if (_filterIndex > 0)
+		{
 			address = "GetElementIds/ByFieldNameAndValue";
+		}
 			
 		$.couch.db(GetDatabaseName()).view(address,
 		{
 			startkey : startKey,
 			endkey : endKey,
-			success : function(data) {
-				console.log("SUCCESS");
-				
+			success : function(data) {				
 				if (_filterIndex == 0)
 				{
 					_elements = data.rows;
@@ -137,8 +148,6 @@ function LoadElemente()
 					_filterIndex++;
 					LoadElemente();
 				}
-				
-				console.log("Anzahl der Ergebniselemente: " + _elements.length);
 			},
 			error : function(data) {
 				_filterIndex = 0;
@@ -148,12 +157,9 @@ function LoadElemente()
 	}
 	else
 	{
-		_filterIndex = 0;
-		
+		_filterIndex = 0;		
 		$("#ergebnisse").empty();
-		
-		console.log("Ergebnisse: " + _elements.length);
-		
+				
 		if (_elements.length >= 1)
 		{
 			for (var i = 0; i < _elements.length; i++)
@@ -177,49 +183,49 @@ function LoadElemente()
 }
 
 function LoadTabellen(elemente) {
-	var currentFormular = elemente[0].value.Formular;
-	
-	console.log(currentFormular);
-	
-	var gruppierteElemente = new Array();
-	gruppierteElemente.push(new Array());
+	var formularName = new Array();
+	formularName.push(elemente[0].value.Formular);
+		
+	var gruppierteElemente = new Object();
+	gruppierteElemente[formularName[formularName.length - 1]] = new Array();	
 	
 	for (var i = 0; i < elemente.length; i++)
 	{
-		if (elemente[i].value.Formular != currentFormular)
+		if (elemente[i].value.Formular == undefined)
 		{
-			currentFormular = elemente[i].value.Formular;
-			
-			console.log(currentFormular);
-			
-			gruppierteElemente.push(new Array());
+			continue;
 		}
 		
-		gruppierteElemente[gruppierteElemente.length - 1].push(elemente[i].value);
+		var formularNameIndex = formularName.indexOf(elemente[i].value.Formular);
+				
+		if (formularNameIndex == -1)
+		{
+			formularName.push(elemente[i].value.Formular);
+			formularNameIndex = formularName.length - 1;
+			gruppierteElemente[formularName[formularNameIndex]] = new Array();	
+		}		
+			
+		gruppierteElemente[formularName[formularNameIndex]].push(elemente[i].value);
 	}
 		
-	console.log("Gruppen: " + gruppierteElemente.length);
-	
-	for (var i = 0; i < gruppierteElemente.length; i++)
+	for (var i = 0; i < formularName.length; i++)
 	{
-		LoadTabelle(gruppierteElemente[i]);
+		LoadTabelle(gruppierteElemente[formularName[i]]);
 	}
+	
+	$("body").css("cursor", "default");
 }
 
 function LoadTabelle(elemente) {
 	if (elemente.length == 0)
 		return;
-		
+				
 	var formularBezeichnung = elemente[0].Formular;
 	
-	console.log("Gesuchtes Formular: " + formularBezeichnung);
 	$.couch.db(GetDatabaseName()).view("GetFormular/ByBezeichnung",
 	{
 		key : formularBezeichnung,
 		success : function(data) {	
-						
-			console.log("Gefundene Formulare: " + data.total_rows);
-			
 			if (data.total_rows > 0)
 				LoadTabelleElemente(data.rows[0].value, elemente);
 		},
@@ -229,9 +235,27 @@ function LoadTabelle(elemente) {
 	});
 }
 
+function ToggleTable(formularName) {	
+	$("body").css("cursor", "wait");
+	
+	if ($("table[formular='" + formularName + "']").is(":visible"))
+	{
+		$("input[type=button][formular='" + formularName + "']").val("[+]");
+	}
+	else
+	{
+		$("input[type=button][formular='" + formularName + "']").val("[-]");
+	}
+		
+	$("div[formular='" + formularName + "']").toggle({
+		always : function() { $("body").css("cursor", "default"); } });
+}
+
 function LoadTabelleElemente(formular, elemente) {	
 	var html = "<h2>" + formular.Bezeichnung + " (" + elemente.length + ")</h2>";
-	html += "<table cellspacing=0 cellpadding=0>";
+	html += "<input type=button value=[-] formular=\"" + formular.Bezeichnung + "\" onclick=\"javascript:ToggleTable('" + formular.Bezeichnung + "');\" />";
+	html += "<div formular=\"" + formular.Bezeichnung + "\">";
+	html += "<table cellspacing=0 cellpadding=0 formular=\"" + formular.Bezeichnung + "\">";
 	html += LoadTableHeader(formular);
 	
 	for (var i = 0; i < elemente.length; i++)
@@ -240,6 +264,7 @@ function LoadTabelleElemente(formular, elemente) {
 	}
 	
 	html += "</table>";
+	html += "</div>";
 	$("#ergebnisse").append(html);
 }
 
