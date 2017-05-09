@@ -5,8 +5,8 @@ body {
 	min-height: 400px;
 }
 
-#ergebnisse tr:hover, 
-#ergebnisse tr:hover a { 
+#ergebnisse tbody tr:hover, 
+#ergebnisse tbody tr:hover a { 
     background-color: #4CAF50;   
     color: white;
 }	

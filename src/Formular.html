@@ -204,6 +204,12 @@ function UpdateElemente(oldFormular, newFormular) {
 function UpdateElementFelder(element, oldFormular, newFormular) {
 	for (var i = 0; i < oldFormular.Felder.length; i++)
 	{	
+		if (oldFormular.Felder[i].Bezeichnung == newFormular.Felder[i].Bezeichnung)
+		{
+			console.log("Altes und neues Feld sind identisch: " + oldFormular.Felder[i].Bezeichnung + " = " + newFormular.Felder[i].Bezeichnung);
+			continue;
+		}
+
 		console.log("Zu aktualisierendes Feld: " + oldFormular.Felder[i].Bezeichnung + " -> " + newFormular.Felder[i].Bezeichnung);
 		
 		if (element.Felder[oldFormular.Felder[i].Bezeichnung] == undefined ||

@@ -51,7 +51,7 @@ function CreateDownloadLink(formular)
 	console.log("Creating download link for " + formular.Bezeichnung);
 	
 	var date = new Date();
-	$("li[name='" + formular.Bezeichnung + "']").append("<a name=\"" + formular.Bezeichnung + "\" download=\"" + date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDay() + "_" +formular.Bezeichnung + ".csv\">" + formular.Bezeichnung + " exportieren</a>");
+	$("li[name='" + formular.Bezeichnung + "']").append("<a name=\"" + formular.Bezeichnung + "\" download=\"" + date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + "_" +formular.Bezeichnung + ".csv\">" + formular.Bezeichnung + " exportieren</a>");
 	LoadElemente(formular);
 }
 
